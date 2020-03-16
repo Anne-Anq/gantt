@@ -14,7 +14,7 @@ const useStyles = makeStyles(theme => ({
     padding: theme.spacing(1),
     width: '-webkit-fill-available'
   },
-  wrapper: { width: '100vw' }
+  wrapper: { width: '100vw', overflowY: 'scroll' }
 }))
 
 export const SearchBar = ({ data, children }) => {

@@ -2,11 +2,17 @@
   width: -webkit-fill-available;
   height: fit-content;
   border: 1px solid black;
-  margin: 8px;
+  margin-bottom: 8px;
 }
 .titleDiv {
   display: flex;
 }
 .eventDiv {
   display: flex;
+}
+#main {
+  padding: 8px;
+}
+.eventsSvg {
+  width: 100%;
 }

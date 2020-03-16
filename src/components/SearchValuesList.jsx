@@ -52,7 +52,6 @@ const createEventsSvg = parentNode => {
   return eventsDiv
     .append('svg')
     .attr('height', d => totalHeight(d.events.length))
-    .attr('width', '100%')
     .attr('class', 'eventsSvg')
 }
 
@@ -97,7 +96,7 @@ const getXScale = (values, eventScheduleWidth) => {
   const mindate = minDate(values)
   const maxdate = maxDate(values)
   const xScale = d3
-    .scaleLinear()
+    .scaleTime()
     .domain([mindate, maxdate])
     .range([0, eventScheduleWidth])
   return xScale
@@ -107,13 +106,20 @@ const addScheduleRect = (gParentNode, xScale, eventsTitleWidth) => {
   gParentNode
     .append('rect')
     .attr('transform', d => `translate(${eventsTitleWidth},0)`)
-    .attr('x', event => xScale(event.startTime))
     .attr('y', LINE_PADDING)
-    .attr('width', event => xScale(event.endTime) - xScale(event.startTime))
     .attr('height', EVENT_RECT_HEIGHT)
     .attr('fill', event => event.style.bg)
     .attr('rx', 5)
+    .attr('class', 'scheduleRect')
+  redrawScheduleRect(xScale)
 }
+
+const redrawScheduleRect = xScale => {
+  d3.selectAll('.scheduleRect')
+    .attr('x', event => xScale(event.startTime))
+    .attr('width', event => xScale(event.endTime) - xScale(event.startTime))
+}
+
 const getXAxis = xScale =>
   d3
     .axisBottom(xScale)
@@ -130,9 +136,14 @@ const buildAxes = (eventsTitleWidth, eventScheduleWidth) => {
       'transform',
       d => `translate(${eventsTitleWidth},${eventsHeight(d.events.length)})`
     )
-    .attr('width', eventScheduleWidth)
     .attr('class', 'line-chart-xaxis')
+
+  setAxisWidth(eventScheduleWidth)
 }
+
+const setAxisWidth = eventScheduleWidth =>
+  d3.selectAll('.scheduleRect').attr('width', eventScheduleWidth)
+
 const drawAxes = xAxis => {
   d3.selectAll('.line-chart-xaxis').call(xAxis)
 }
@@ -151,17 +162,28 @@ export const SearchValuesList = ({ values }) => {
   addBackgroundLine(eventLine)
   addTitleText(eventLine, eventsTitleWidth)
   const entireLineWidth = getBackgroundLineWidth()
-
   const eventScheduleWidth = entireLineWidth - eventsTitleWidth
-
-  // define the x scale
   const xScale = getXScale(values, eventScheduleWidth)
-  //event schedule
   addScheduleRect(eventLine, xScale, eventsTitleWidth)
-  // define axis
-  const xAxis = getXAxis(xScale)
   buildAxes(eventsTitleWidth, eventScheduleWidth)
+  const xAxis = getXAxis(xScale)
   drawAxes(xAxis)
 
-  return <div id="main"></div>
+  const redraw = () => {
+    const entireLineWidth = getBackgroundLineWidth()
+    const eventScheduleWidth = entireLineWidth - eventsTitleWidth
+    console.log(entireLineWidth)
+    // define the x scale
+    const xScale = getXScale(values, eventScheduleWidth)
+    //event schedule
+    redrawScheduleRect(xScale)
+    // define axis
+    setAxisWidth(eventScheduleWidth)
+    const xAxis = getXAxis(xScale)
+    drawAxes(xAxis)
+  }
+
+  window.addEventListener('resize', redraw)
+
+  return <div id="main" />
 }
