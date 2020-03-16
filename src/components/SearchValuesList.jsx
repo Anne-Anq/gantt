@@ -137,12 +137,7 @@ const buildAxes = (eventsTitleWidth, eventScheduleWidth) => {
       d => `translate(${eventsTitleWidth},${eventsHeight(d.events.length)})`
     )
     .attr('class', 'line-chart-xaxis')
-
-  setAxisWidth(eventScheduleWidth)
 }
-
-const setAxisWidth = eventScheduleWidth =>
-  d3.selectAll('.scheduleRect').attr('width', eventScheduleWidth)
 
 const drawAxes = xAxis => {
   d3.selectAll('.line-chart-xaxis').call(xAxis)
@@ -178,7 +173,6 @@ export const SearchValuesList = ({ values }) => {
     //event schedule
     redrawScheduleRect(xScale)
     // define axis
-    setAxisWidth(eventScheduleWidth)
     const xAxis = getXAxis(xScale)
     drawAxes(xAxis)
   }

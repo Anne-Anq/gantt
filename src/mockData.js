@@ -16,7 +16,7 @@ export const mockData = [
   },
   {
     id: 'event2Id',
-    title: 'event2Name',
+    title: 'event2Name finish 21:56',
     startTime: new Date(
       'Sat Mar 14 2020 19:56:24 GMT-0600 (Mountain Daylight Time)'
     ),
@@ -31,7 +31,7 @@ export const mockData = [
   },
   {
     id: 'event3Id',
-    title: 'event3Name',
+    title: 'event3Name finish:20;56',
     startTime: new Date(
       'Sat Mar 14 2020 20:36:24 GMT-0600 (Mountain Daylight Time)'
     ),
