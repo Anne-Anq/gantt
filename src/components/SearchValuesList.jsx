@@ -36,22 +36,44 @@ const createSearchValueDivs = values => {
 }
 
 const addTitleDiv = parentNode => {
-  console.log(parentNode)
   const titleDiv = parentNode.append('div').attr('class', 'titleDiv')
   titleDiv
     .append('button')
+    .on('click', collapseEventsDiv)
     .append('i')
+    .attr('id', d => `${d.searchValue}BtnI`)
     .attr('class', 'material-icons')
     .text('keyboard_arrow_up')
+
   titleDiv.append('div').text(d => d.searchValue)
 }
 
+const collapseEventsDiv = d => {
+  const icon =
+    d3.select(`#${d.searchValue}BtnI`).node().textContent ===
+    'keyboard_arrow_down'
+      ? 'keyboard_arrow_up'
+      : 'keyboard_arrow_down'
+  d3.select(`#${d.searchValue}BtnI`).text(icon)
+  d3.select(`#${d.searchValue}eventsSvgDiv`)
+    .transition()
+    .duration(1000)
+    .style('height', d =>
+      d3.select(`#${d.searchValue}eventsSvgDiv`).node().clientHeight
+        ? '0px'
+        : `${totalHeight(d.events.length)}px`
+    )
+}
+
 const createEventsSvg = parentNode => {
-  console.log(parentNode)
-  const eventsDiv = parentNode.append('div').attr('class', 'eventsSvgDiv')
+  const eventsDiv = parentNode
+    .append('div')
+    .attr('class', 'eventsSvgDiv')
+    .style('height', d => `${totalHeight(d.events.length)}px`)
+    .attr('id', d => `${d.searchValue}eventsSvgDiv`)
   return eventsDiv
     .append('svg')
-    .attr('height', d => totalHeight(d.events.length))
+    .attr('height', '100%')
     .attr('class', 'eventsSvg')
 }
 
@@ -60,7 +82,6 @@ const createEventLine = svgParentNode => {
     d => d.events,
     event => event.id
   )
-  // console.log(event)
   event.exit().remove()
   const eventLine = event
     .enter()
@@ -167,7 +188,6 @@ export const SearchValuesList = ({ values }) => {
   const redraw = () => {
     const entireLineWidth = getBackgroundLineWidth()
     const eventScheduleWidth = entireLineWidth - eventsTitleWidth
-    console.log(entireLineWidth)
     // define the x scale
     const xScale = getXScale(values, eventScheduleWidth)
     //event schedule

@@ -16,3 +16,6 @@
 .eventsSvg {
   width: 100%;
 }
+.eventsSvgDiv {
+  overflow: hidden;
+}
