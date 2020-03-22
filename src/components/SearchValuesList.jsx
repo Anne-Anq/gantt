@@ -3,6 +3,8 @@ import { min, max } from 'date-fns'
 import * as d3 from 'd3'
 import './style.css'
 
+let scaleFactor = 1
+
 const minDate = values =>
   min(values.flatMap(({ events }) => events.map(event => event.startTime)))
 
@@ -114,13 +116,14 @@ const addTitleText = (gParentNode, eventsTitleWidth) =>
     .attr('x', PADDING_LEFT_TEXT)
     .attr('width', eventsTitleWidth)
 
-const getXScale = (values, eventScheduleWidth) => {
+const getXScale = (values, eventScheduleWidth, scaleFactor) => {
   const mindate = minDate(values)
   const maxdate = maxDate(values)
+  console.log(scaleFactor)
   const xScale = d3
     .scaleTime()
     .domain([mindate, maxdate])
-    .range([0, eventScheduleWidth])
+    .range([0, eventScheduleWidth * scaleFactor])
   return xScale
 }
 
@@ -130,6 +133,7 @@ const createClip = (gParentNode, eventsTitleWidth) =>
     .append('clipPath')
     .attr('id', 'clip')
     .append('rect')
+    .attr('width', '100%') // if this is removed clip size does not adjust
     .attr('x', eventsTitleWidth)
     .attr('y', 0)
 
@@ -211,16 +215,21 @@ export const SearchValuesList = ({ values }) => {
   const redraw = () => {
     const entireLineWidth = getBackgroundLineWidth()
     const eventScheduleWidth = entireLineWidth - eventsTitleWidth
-    let xScale = getXScale(values, eventScheduleWidth)
+    let xScale = getXScale(values, eventScheduleWidth, scaleFactor)
     if (d3.event) {
-      xScale = d3.event.transform.rescaleX(xScale)
+      const transformEvent = d3.event.transform
+      scaleFactor = transformEvent.k
+      xScale = transformEvent.rescaleX(xScale)
     }
     redrawScheduleRect(xScale)
     drawAxes(xScale, maxHeight)
   }
   redraw()
   window.addEventListener('resize', redraw)
-  const zoom = d3.zoom().on('zoom', redraw)
+  const zoom = d3
+    .zoom()
+    .scaleExtent([0.06, 6])
+    .on('zoom', redraw)
   eventsSvg.call(zoom)
 
   return (
