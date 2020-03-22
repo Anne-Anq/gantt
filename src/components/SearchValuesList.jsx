@@ -10,12 +10,13 @@ const maxDate = values =>
   max(values.flatMap(({ events }) => events.map(event => event.endTime)))
 
 const EVENT_RECT_HEIGHT = 20
+const TIMELINE_HEIGHT = EVENT_RECT_HEIGHT
 const LINE_PADDING = 5
 const LINE_HEIGHT = EVENT_RECT_HEIGHT + 2 * LINE_PADDING
-const SCALE_HEIGHT = 20
+const PADDING_LEFT_TEXT = 28
 const CHAR_WIDTH = 10
 const eventsHeight = eventNumber => eventNumber * LINE_HEIGHT
-const totalHeight = eventNumber => eventsHeight(eventNumber) + SCALE_HEIGHT
+const totalHeight = eventNumber => eventsHeight(eventNumber)
 const getEventsTitleWidth = values =>
   Math.max(
     ...values.flatMap(({ events }) => events.map(event => event.title.length))
@@ -39,10 +40,12 @@ const addTitleDiv = parentNode => {
   const titleDiv = parentNode.append('div').attr('class', 'titleDiv')
   titleDiv
     .append('button')
+    .attr('class', 'collapseBtn')
     .on('click', collapseEventsDiv)
     .append('i')
     .attr('id', d => `${d.searchValue}BtnI`)
     .attr('class', 'material-icons')
+    .style('font-size', '1.2em')
     .text('keyboard_arrow_up')
 
   titleDiv.append('div').text(d => d.searchValue)
@@ -57,7 +60,7 @@ const collapseEventsDiv = d => {
   d3.select(`#${d.searchValue}BtnI`).text(icon)
   d3.select(`#${d.searchValue}eventsSvgDiv`)
     .transition()
-    .duration(1000)
+    .duration(300)
     .style('height', d =>
       d3.select(`#${d.searchValue}eventsSvgDiv`).node().clientHeight
         ? '0px'
@@ -97,7 +100,7 @@ const addBackgroundLine = gParentNode =>
     .attr('height', LINE_HEIGHT)
     .attr('width', '100%')
     .attr('class', 'eventLineBackground')
-    .attr('fill', (d, i) => (i % 2 !== 0 ? '#ffffff' : '#b2ffff66'))
+    .attr('fill', (d, i) => (i % 2 === 0 ? '#ffffff' : '#b2ffff66'))
 
 const getBackgroundLineWidth = () => {
   const eventLineBackground = d3.select('.eventLineBackground').node()
@@ -108,14 +111,15 @@ const addTitleText = (gParentNode, eventsTitleWidth) =>
   gParentNode
     .append('text')
     .text(event => event.title)
-    .attr('fill', event => event.style.bg)
     .attr('alignment-baseline', 'middle')
     .attr('y', LINE_HEIGHT / 2)
+    .attr('x', PADDING_LEFT_TEXT)
     .attr('width', eventsTitleWidth)
 
 const getXScale = (values, eventScheduleWidth) => {
   const mindate = minDate(values)
   const maxdate = maxDate(values)
+  // console.log(eventScheduleWidth)
   const xScale = d3
     .scaleTime()
     .domain([mindate, maxdate])
@@ -123,7 +127,7 @@ const getXScale = (values, eventScheduleWidth) => {
   return xScale
 }
 
-const addScheduleRect = (gParentNode, xScale, eventsTitleWidth) => {
+const addScheduleRect = (gParentNode, eventsTitleWidth) => {
   gParentNode
     .append('rect')
     .attr('transform', d => `translate(${eventsTitleWidth},0)`)
@@ -132,25 +136,34 @@ const addScheduleRect = (gParentNode, xScale, eventsTitleWidth) => {
     .attr('fill', event => event.style.bg)
     .attr('rx', 5)
     .attr('class', 'scheduleRect')
-  redrawScheduleRect(xScale)
 }
 
 const redrawScheduleRect = xScale => {
   d3.selectAll('.scheduleRect')
-    .attr('x', event => xScale(event.startTime))
+    .attr('x', event => {
+      // console.log(xScale(event.startTime), xScale, event.startTime)
+      // // console.log(xScale(event.endTime) - xScale(event.startTime))
+      return xScale(event.startTime)
+    })
     .attr('width', event => xScale(event.endTime) - xScale(event.startTime))
 }
 
-const getXAxis = xScale =>
+const getXAxis = (xScale, maxHeight) =>
   d3
     .axisBottom(xScale)
+    .ticks(d3.timeMinute.every(15))
+    .tickSize(-maxHeight)
+
+const getTimeline = xScale =>
+  d3
+    .axisTop(xScale)
     .ticks(d3.timeMinute.every(15))
     .tickSize(5)
     .tickFormat(x =>
       d3.timeFormat('%M')(x) === '00' ? d3.timeFormat('%H:%M')(x) : ''
     )
 
-const buildAxes = (eventsTitleWidth, eventScheduleWidth) => {
+const buildAxes = eventsTitleWidth => {
   d3.selectAll('.eventsSvg')
     .append('g')
     .attr(
@@ -160,44 +173,63 @@ const buildAxes = (eventsTitleWidth, eventScheduleWidth) => {
     .attr('class', 'line-chart-xaxis')
 }
 
-const drawAxes = xAxis => {
-  d3.selectAll('.line-chart-xaxis').call(xAxis)
+const drawAxes = (xScale, maxHeight, eventScheduleWidth) => {
+  const xAxis = getXAxis(xScale, maxHeight)
+  const timeline = getTimeline(xScale)
+  d3.selectAll('.line-chart-xaxis')
+    .attr('width', x => {
+      console.log(eventScheduleWidth)
+      return eventScheduleWidth
+    })
+    .call(xAxis)
+    .attr('class', 'tickLines')
+
+  d3.select('#time')
+    .call(timeline)
+    .attr('class', 'legend')
 }
 
 export const SearchValuesList = ({ values }) => {
-  const eventsTitleWidth = getEventsTitleWidth(values)
+  const eventsTitleWidth = values.length ? getEventsTitleWidth(values) : 0
+  if (values.length) {
+    const searchValueDiv = createSearchValueDivs(values)
+    const maxHeight = totalHeight(
+      Math.max(...values.map(value => value.events.length))
+    )
 
-  const searchValueDiv = createSearchValueDivs(values)
+    // add a title div with collapse button
+    addTitleDiv(searchValueDiv)
+    // add svg to show all the events
+    const eventsSvg = createEventsSvg(searchValueDiv)
+    const eventLine = createEventLine(eventsSvg)
 
-  // add a title div with collapse button
-  addTitleDiv(searchValueDiv)
-  // add svg to show all the events
-  const eventsSvg = createEventsSvg(searchValueDiv)
-  const eventLine = createEventLine(eventsSvg)
+    addBackgroundLine(eventLine)
+    addTitleText(eventLine, eventsTitleWidth)
+    addScheduleRect(eventLine, eventsTitleWidth)
+    buildAxes(eventsTitleWidth)
 
-  addBackgroundLine(eventLine)
-  addTitleText(eventLine, eventsTitleWidth)
-  const entireLineWidth = getBackgroundLineWidth()
-  const eventScheduleWidth = entireLineWidth - eventsTitleWidth
-  const xScale = getXScale(values, eventScheduleWidth)
-  addScheduleRect(eventLine, xScale, eventsTitleWidth)
-  buildAxes(eventsTitleWidth, eventScheduleWidth)
-  const xAxis = getXAxis(xScale)
-  drawAxes(xAxis)
-
-  const redraw = () => {
-    const entireLineWidth = getBackgroundLineWidth()
-    const eventScheduleWidth = entireLineWidth - eventsTitleWidth
-    // define the x scale
-    const xScale = getXScale(values, eventScheduleWidth)
-    //event schedule
-    redrawScheduleRect(xScale)
-    // define axis
-    const xAxis = getXAxis(xScale)
-    drawAxes(xAxis)
+    const redraw = () => {
+      const entireLineWidth = getBackgroundLineWidth()
+      const eventScheduleWidth = entireLineWidth - eventsTitleWidth
+      const xScale = getXScale(values, eventScheduleWidth)
+      redrawScheduleRect(xScale)
+      drawAxes(xScale, maxHeight, eventScheduleWidth)
+    }
+    redraw()
+    window.addEventListener('resize', redraw)
   }
 
-  window.addEventListener('resize', redraw)
-
-  return <div id="main" />
+  return (
+    <div id="container">
+      <div>
+        <svg height={TIMELINE_HEIGHT} width="100%">
+          <g
+            id="time"
+            transform={`translate(${eventsTitleWidth},${TIMELINE_HEIGHT})`}
+          />
+        </svg>
+      </div>
+      <div id="main" />
+    </div>
+  )
 }

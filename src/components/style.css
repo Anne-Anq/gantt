@@ -1,21 +1,44 @@
+#main {
+  border: 1px solid black;
+}
+#container {
+  margin: 8px;
+}
 .searchValueDiv {
   width: -webkit-fill-available;
-  height: fit-content;
-  border: 1px solid black;
-  margin-bottom: 8px;
 }
 .titleDiv {
   display: flex;
+  height: 20px;
+  background: linear-gradient(
+    172deg,
+    rgba(2, 0, 36, 1) 0%,
+    rgba(76, 76, 128, 0.8468429608171394) 26%,
+    rgb(190, 208, 212) 100%
+  );
+  color: white;
+  font-size: 0.8em;
+  text-transform: uppercase;
 }
 .eventDiv {
   display: flex;
-}
-#main {
-  padding: 8px;
 }
 .eventsSvg {
   width: 100%;
 }
 .eventsSvgDiv {
   overflow: hidden;
+}
+.collapseBtn {
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: white;
+}
+.tick {
+  stroke-dasharray: 4;
+  color: #a7a7a7;
+}
+.tickLines {
+  color: grey;
 }
