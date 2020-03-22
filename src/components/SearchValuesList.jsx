@@ -119,7 +119,6 @@ const addTitleText = (gParentNode, eventsTitleWidth) =>
 const getXScale = (values, eventScheduleWidth) => {
   const mindate = minDate(values)
   const maxdate = maxDate(values)
-  // console.log(eventScheduleWidth)
   const xScale = d3
     .scaleTime()
     .domain([mindate, maxdate])
@@ -140,11 +139,7 @@ const addScheduleRect = (gParentNode, eventsTitleWidth) => {
 
 const redrawScheduleRect = xScale => {
   d3.selectAll('.scheduleRect')
-    .attr('x', event => {
-      // console.log(xScale(event.startTime), xScale, event.startTime)
-      // // console.log(xScale(event.endTime) - xScale(event.startTime))
-      return xScale(event.startTime)
-    })
+    .attr('x', event => xScale(event.startTime))
     .attr('width', event => xScale(event.endTime) - xScale(event.startTime))
 }
 
@@ -173,7 +168,7 @@ const buildAxes = eventsTitleWidth => {
     .attr('class', 'line-chart-xaxis')
 }
 
-const drawAxes = (xScale, maxHeight, eventScheduleWidth) => {
+const drawAxes = (xScale, maxHeight) => {
   const xAxis = getXAxis(xScale, maxHeight)
   const timeline = getTimeline(xScale)
   d3.selectAll('.line-chart-xaxis').call(xAxis)
@@ -207,7 +202,7 @@ export const SearchValuesList = ({ values }) => {
       const eventScheduleWidth = entireLineWidth - eventsTitleWidth
       const xScale = getXScale(values, eventScheduleWidth)
       redrawScheduleRect(xScale)
-      drawAxes(xScale, maxHeight, eventScheduleWidth)
+      drawAxes(xScale, maxHeight)
     }
     redraw()
     window.addEventListener('resize', redraw)
