@@ -15,6 +15,7 @@ const LINE_PADDING = 5
 const LINE_HEIGHT = EVENT_RECT_HEIGHT + 2 * LINE_PADDING
 const PADDING_LEFT_TEXT = 28
 const CHAR_WIDTH = 10
+const TIMELINE_TICK_SIZE = 5
 const eventsHeight = eventNumber => eventNumber * LINE_HEIGHT
 const totalHeight = eventNumber => eventsHeight(eventNumber)
 const getEventsTitleWidth = values =>
@@ -44,25 +45,23 @@ const addTitleDiv = parentNode => {
     .on('click', collapseEventsDiv)
     .append('i')
     .attr('id', d => `${d.searchValue}BtnI`)
-    .attr('class', 'material-icons')
-    .style('font-size', '1.2em')
+    .attr('class', 'material-icons collapseBtnIcon')
     .text('keyboard_arrow_up')
 
   titleDiv.append('div').text(d => d.searchValue)
 }
 
 const collapseEventsDiv = d => {
-  const icon =
-    d3.select(`#${d.searchValue}BtnI`).node().textContent ===
-    'keyboard_arrow_down'
-      ? 'keyboard_arrow_up'
-      : 'keyboard_arrow_down'
-  d3.select(`#${d.searchValue}BtnI`).text(icon)
-  d3.select(`#${d.searchValue}eventsSvgDiv`)
+  const up = 'keyboard_arrow_up'
+  const down = 'keyboard_arrow_down'
+  const thisButtonIcon = d3.select(`#${d.searchValue}BtnI`)
+  thisButtonIcon.text(thisButtonIcon.node().textContent === down ? up : down)
+  const thisEventsSvgDiv = d3.select(`#${d.searchValue}eventsSvgDiv`)
+  thisEventsSvgDiv
     .transition()
-    .duration(300)
+    .duration(d => d.events.length * 200)
     .style('height', d =>
-      d3.select(`#${d.searchValue}eventsSvgDiv`).node().clientHeight
+      thisEventsSvgDiv.node().clientHeight
         ? '0px'
         : `${totalHeight(d.events.length)}px`
     )
@@ -74,10 +73,7 @@ const createEventsSvg = parentNode => {
     .attr('class', 'eventsSvgDiv')
     .style('height', d => `${totalHeight(d.events.length)}px`)
     .attr('id', d => `${d.searchValue}eventsSvgDiv`)
-  return eventsDiv
-    .append('svg')
-    .attr('height', '100%')
-    .attr('class', 'eventsSvg')
+  return eventsDiv.append('svg').attr('class', 'eventsSvg')
 }
 
 const createEventLine = svgParentNode => {
@@ -90,7 +86,7 @@ const createEventLine = svgParentNode => {
     .enter()
     .append('g')
     .merge(event)
-    .attr('transform', (d, i) => `translate(0,${i * LINE_HEIGHT})`)
+    .attr('transform', (_d, i) => `translate(0,${i * LINE_HEIGHT})`)
   return eventLine
 }
 
@@ -98,9 +94,10 @@ const addBackgroundLine = gParentNode =>
   gParentNode
     .append('rect')
     .attr('height', LINE_HEIGHT)
-    .attr('width', '100%')
-    .attr('class', 'eventLineBackground')
-    .attr('fill', (d, i) => (i % 2 === 0 ? '#ffffff' : '#b2ffff66'))
+    .attr(
+      'class',
+      (_d, i) => `eventLineBackground ${i % 2 === 0 ? 'evenLine' : 'oddLine'}`
+    )
 
 const getBackgroundLineWidth = () => {
   const eventLineBackground = d3.select('.eventLineBackground').node()
@@ -111,7 +108,7 @@ const addTitleText = (gParentNode, eventsTitleWidth) =>
   gParentNode
     .append('text')
     .text(event => event.title)
-    .attr('alignment-baseline', 'middle')
+    .attr('class', 'eventTitleText')
     .attr('y', LINE_HEIGHT / 2)
     .attr('x', PADDING_LEFT_TEXT)
     .attr('width', eventsTitleWidth)
@@ -129,11 +126,9 @@ const getXScale = (values, eventScheduleWidth) => {
 const createClip = (gParentNode, eventsTitleWidth) =>
   gParentNode
     .append('defs')
-    .append('SVG:clipPath')
+    .append('clipPath')
     .attr('id', 'clip')
-    .append('SVG:rect')
-    .attr('width', '100%')
-    .attr('height', '100%')
+    .append('rect')
     .attr('x', eventsTitleWidth)
     .attr('y', 0)
 
@@ -166,7 +161,7 @@ const getTimeline = xScale =>
   d3
     .axisTop(xScale)
     .ticks(d3.timeMinute.every(15))
-    .tickSize(5)
+    .tickSize(TIMELINE_TICK_SIZE)
     .tickFormat(x =>
       d3.timeFormat('%M')(x) === '00' ? d3.timeFormat('%H:%M')(x) : ''
     )

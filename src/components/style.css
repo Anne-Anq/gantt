@@ -28,6 +28,7 @@
 }
 .eventsSvg {
   width: 100%;
+  height: 100%;
 }
 .eventsSvgDiv {
   overflow: hidden;
@@ -37,6 +38,25 @@
   outline: none;
   background-color: transparent;
   color: white;
+}
+.collapseBtnIcon {
+  font-size: 1.2em;
+}
+.eventLineBackground {
+  width: 100%;
+}
+.evenLine {
+  fill: white;
+}
+.oddLine {
+  fill: rgba(190, 208, 212, 0.33);
+}
+.eventTitleText {
+  alignment-baseline: middle;
+}
+#clip rect {
+  width: 100%;
+  height: 100%;
 }
 .tick {
   stroke-dasharray: 4;

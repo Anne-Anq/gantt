@@ -8,7 +8,7 @@ export const mockData = [
     endTime: new Date(
       'Sat Mar 14 2020 20:56:24 GMT-0600 (Mountain Daylight Time)'
     ),
-    lookupTags: ['Entity1name', 'jobsite2name'],
+    lookupTags: ['Entity1name', 'jobsite2name', 'entity2name', 'Jobsite1name'],
     style: {
       text: '#f123321',
       bg: '#102591'
