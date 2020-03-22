@@ -126,8 +126,21 @@ const getXScale = (values, eventScheduleWidth) => {
   return xScale
 }
 
+const createClip = (gParentNode, eventsTitleWidth) =>
+  gParentNode
+    .append('defs')
+    .append('SVG:clipPath')
+    .attr('id', 'clip')
+    .append('SVG:rect')
+    .attr('width', '100%')
+    .attr('height', '100%')
+    .attr('x', eventsTitleWidth)
+    .attr('y', 0)
+
 const addScheduleRect = (gParentNode, eventsTitleWidth) => {
   gParentNode
+    .append('g')
+    .attr('clip-path', 'url(#clip)')
     .append('rect')
     .attr('transform', d => `translate(${eventsTitleWidth},0)`)
     .attr('y', LINE_PADDING)
@@ -190,22 +203,29 @@ export const SearchValuesList = ({ values }) => {
   addTitleDiv(searchValueDiv)
   // add svg to show all the events
   const eventsSvg = createEventsSvg(searchValueDiv)
+
   const eventLine = createEventLine(eventsSvg)
 
   addBackgroundLine(eventLine)
   addTitleText(eventLine, eventsTitleWidth)
+  createClip(eventLine, eventsTitleWidth)
   addScheduleRect(eventLine, eventsTitleWidth)
   buildAxes(eventsTitleWidth)
 
   const redraw = () => {
     const entireLineWidth = getBackgroundLineWidth()
     const eventScheduleWidth = entireLineWidth - eventsTitleWidth
-    const xScale = getXScale(values, eventScheduleWidth)
+    let xScale = getXScale(values, eventScheduleWidth)
+    if (d3.event) {
+      xScale = d3.event.transform.rescaleX(xScale)
+    }
     redrawScheduleRect(xScale)
     drawAxes(xScale, maxHeight)
   }
   redraw()
   window.addEventListener('resize', redraw)
+  const zoom = d3.zoom().on('zoom', redraw)
+  eventsSvg.call(zoom)
 
   return (
     <div id="container">
