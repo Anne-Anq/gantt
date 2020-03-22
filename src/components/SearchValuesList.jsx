@@ -2,6 +2,7 @@ import React from 'react'
 import { min, max } from 'date-fns'
 import * as d3 from 'd3'
 import './style.css'
+import { addHours } from 'date-fns/esm'
 
 let transformEvent
 
@@ -155,20 +156,83 @@ const redrawScheduleRect = xScale => {
     .attr('width', event => xScale(event.endTime) - xScale(event.startTime))
 }
 
-const getXAxis = (xScale, maxHeight) =>
-  d3
+const getTimeScaleGauge = xScale => {
+  const date1 = new Date()
+  const date2 = addHours(date1, 1)
+  return xScale(date2) - xScale(date1)
+}
+
+const getTicksSpacing = xScale => {
+  const gauge = getTimeScaleGauge(xScale)
+  let ticksSpacing
+  if (gauge < 4) {
+    ticksSpacing = d3.timeHour.every(12)
+  } else if (gauge < 20) {
+    ticksSpacing = d3.timeHour.every(6)
+  } else if (gauge < 30) {
+    ticksSpacing = d3.timeHour.every(2)
+  } else if (gauge < 60) {
+    ticksSpacing = d3.timeHour.every(1)
+  } else if (gauge < 120) {
+    ticksSpacing = d3.timeMinute.every(30)
+  } else if (gauge < 420) {
+    ticksSpacing = d3.timeMinute.every(15)
+  } else {
+    ticksSpacing = d3.timeMinute.every(5)
+  }
+  return ticksSpacing
+}
+
+const isEveryXHours = (timestamp, hoursSeparation) =>
+  Number(d3.timeFormat('%H')(timestamp)) % hoursSeparation === 0
+
+const isEveryXMinute = (timestamp, minutesSeparation) =>
+  Number(d3.timeFormat('%M')(timestamp)) % minutesSeparation === 0
+
+const isAtNoon = x => d3.timeFormat('%H')(x) === '12'
+
+const HourMinuteFormat = x => d3.timeFormat('%H:%M')(x)
+
+const dateFormat = x => d3.timeFormat('%d/%b/%y')(x)
+
+const isEveryOtherDay = x => Number(d3.timeFormat('%d')(x)) % 2 === 0
+
+const every6hoursFormat = x => (isEveryXHours(x, 6) ? HourMinuteFormat(x) : '')
+
+const getTicksFormat = (xScale, x) => {
+  const gauge = getTimeScaleGauge(xScale)
+  let ticksFormat
+  if (gauge < 2.5) {
+    ticksFormat = isEveryOtherDay(x) && isAtNoon(x) ? dateFormat(x) : ''
+  } else if (gauge < 5) {
+    ticksFormat = isAtNoon(x) ? dateFormat(x) : ''
+  } else if (gauge < 30) {
+    ticksFormat = isAtNoon(x) ? dateFormat(x) : every6hoursFormat(x)
+  } else if (gauge < 60) {
+    ticksFormat = isEveryXHours(x, 2) ? HourMinuteFormat(x) : ''
+  } else if (gauge < 120) {
+    ticksFormat = isEveryXHours(x, 1) ? HourMinuteFormat(x) : ''
+  } else if (gauge < 420) {
+    ticksFormat = isEveryXMinute(x, 30) ? HourMinuteFormat(x) : ''
+  } else {
+    ticksFormat = HourMinuteFormat(x)
+  }
+  return ticksFormat
+}
+
+const getXAxis = (xScale, maxHeight) => {
+  return d3
     .axisBottom(xScale)
-    .ticks(d3.timeMinute.every(15))
+    .ticks(getTicksSpacing(xScale))
     .tickSize(-maxHeight)
+}
 
 const getTimeline = xScale =>
   d3
     .axisTop(xScale)
-    .ticks(d3.timeMinute.every(15))
+    .ticks(getTicksSpacing(xScale))
     .tickSize(TIMELINE_TICK_SIZE)
-    .tickFormat(x =>
-      d3.timeFormat('%M')(x) === '00' ? d3.timeFormat('%H:%M')(x) : ''
-    )
+    .tickFormat(x => getTicksFormat(xScale, x))
 
 const buildAxes = eventsTitleWidth => {
   d3.selectAll('.eventsSvg')
@@ -228,10 +292,9 @@ export const SearchValuesList = ({ values }) => {
   window.addEventListener('resize', redraw)
   const zoom = d3
     .zoom()
-    .scaleExtent([0.06, 6])
+    .scaleExtent([0.006, 6])
     .on('zoom', redraw)
   eventsSvg.call(zoom)
-
   return (
     <div id="container">
       <div>
