@@ -180,45 +180,48 @@ const drawAxes = (xScale, maxHeight) => {
 
 export const SearchValuesList = ({ values }) => {
   const eventsTitleWidth = values.length ? getEventsTitleWidth(values) : 0
-  if (values.length) {
-    const searchValueDiv = createSearchValueDivs(values)
-    const maxHeight = totalHeight(
-      Math.max(...values.map(value => value.events.length))
-    )
 
-    // add a title div with collapse button
-    addTitleDiv(searchValueDiv)
-    // add svg to show all the events
-    const eventsSvg = createEventsSvg(searchValueDiv)
-    const eventLine = createEventLine(eventsSvg)
+  const searchValueDiv = createSearchValueDivs(values)
+  const maxHeight = totalHeight(
+    Math.max(...values.map(value => value.events.length))
+  )
 
-    addBackgroundLine(eventLine)
-    addTitleText(eventLine, eventsTitleWidth)
-    addScheduleRect(eventLine, eventsTitleWidth)
-    buildAxes(eventsTitleWidth)
+  // add a title div with collapse button
+  addTitleDiv(searchValueDiv)
+  // add svg to show all the events
+  const eventsSvg = createEventsSvg(searchValueDiv)
+  const eventLine = createEventLine(eventsSvg)
 
-    const redraw = () => {
-      const entireLineWidth = getBackgroundLineWidth()
-      const eventScheduleWidth = entireLineWidth - eventsTitleWidth
-      const xScale = getXScale(values, eventScheduleWidth)
-      redrawScheduleRect(xScale)
-      drawAxes(xScale, maxHeight)
-    }
-    redraw()
-    window.addEventListener('resize', redraw)
+  addBackgroundLine(eventLine)
+  addTitleText(eventLine, eventsTitleWidth)
+  addScheduleRect(eventLine, eventsTitleWidth)
+  buildAxes(eventsTitleWidth)
+
+  const redraw = () => {
+    const entireLineWidth = getBackgroundLineWidth()
+    const eventScheduleWidth = entireLineWidth - eventsTitleWidth
+    const xScale = getXScale(values, eventScheduleWidth)
+    redrawScheduleRect(xScale)
+    drawAxes(xScale, maxHeight)
   }
+  redraw()
+  window.addEventListener('resize', redraw)
 
   return (
     <div id="container">
       <div>
-        <svg height={TIMELINE_HEIGHT} width="100%">
+        <svg
+          height={TIMELINE_HEIGHT}
+          width="100%"
+          className={values.length ? '' : 'hidden'}
+        >
           <g
             id="time"
             transform={`translate(${eventsTitleWidth},${TIMELINE_HEIGHT})`}
           />
         </svg>
       </div>
-      <div id="main" />
+      <div id="main" className={values.length ? '' : 'hidden'} />
     </div>
   )
 }

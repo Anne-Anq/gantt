@@ -4,6 +4,9 @@
 #container {
   margin: 8px;
 }
+.hidden {
+  opacity: 0;
+}
 .searchValueDiv {
   width: -webkit-fill-available;
 }
