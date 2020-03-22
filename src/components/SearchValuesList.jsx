@@ -94,6 +94,7 @@ const addBackgroundLine = gParentNode =>
   gParentNode
     .append('rect')
     .attr('height', LINE_HEIGHT)
+    .attr('width', '100%') // removing this prevents rescale on window resize
     .attr(
       'class',
       (_d, i) => `eventLineBackground ${i % 2 === 0 ? 'evenLine' : 'oddLine'}`
