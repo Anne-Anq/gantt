@@ -176,13 +176,7 @@ const buildAxes = eventsTitleWidth => {
 const drawAxes = (xScale, maxHeight, eventScheduleWidth) => {
   const xAxis = getXAxis(xScale, maxHeight)
   const timeline = getTimeline(xScale)
-  d3.selectAll('.line-chart-xaxis')
-    .attr('width', x => {
-      console.log(eventScheduleWidth)
-      return eventScheduleWidth
-    })
-    .call(xAxis)
-    .attr('class', 'tickLines')
+  d3.selectAll('.line-chart-xaxis').call(xAxis)
 
   d3.select('#time')
     .call(timeline)
