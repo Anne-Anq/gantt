@@ -3,7 +3,7 @@ import { min, max } from 'date-fns'
 import * as d3 from 'd3'
 import './style.css'
 
-let scaleFactor = 1
+let transformEvent
 
 const minDate = values =>
   min(values.flatMap(({ events }) => events.map(event => event.startTime)))
@@ -116,14 +116,13 @@ const addTitleText = (gParentNode, eventsTitleWidth) =>
     .attr('x', PADDING_LEFT_TEXT)
     .attr('width', eventsTitleWidth)
 
-const getXScale = (values, eventScheduleWidth, scaleFactor) => {
+const getXScale = (values, eventScheduleWidth) => {
   const mindate = minDate(values)
   const maxdate = maxDate(values)
-  console.log(scaleFactor)
   const xScale = d3
     .scaleTime()
     .domain([mindate, maxdate])
-    .range([0, eventScheduleWidth * scaleFactor])
+    .range([0, eventScheduleWidth])
   return xScale
 }
 
@@ -215,10 +214,11 @@ export const SearchValuesList = ({ values }) => {
   const redraw = () => {
     const entireLineWidth = getBackgroundLineWidth()
     const eventScheduleWidth = entireLineWidth - eventsTitleWidth
-    let xScale = getXScale(values, eventScheduleWidth, scaleFactor)
+    let xScale = getXScale(values, eventScheduleWidth)
     if (d3.event) {
-      const transformEvent = d3.event.transform
-      scaleFactor = transformEvent.k
+      transformEvent = d3.event.transform
+    }
+    if (transformEvent) {
       xScale = transformEvent.rescaleX(xScale)
     }
     redrawScheduleRect(xScale)
