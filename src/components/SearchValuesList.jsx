@@ -193,7 +193,27 @@ const isAtNoon = x => d3.timeFormat('%H')(x) === '12'
 
 const HourMinuteFormat = x => d3.timeFormat('%H:%M')(x)
 
-const dateFormat = x => d3.timeFormat('%d/%b/%y')(x)
+const dateFormat = x => d3.timeFormat('%d %b %y')(x)
+
+const dateSuffix = x => {
+  const dateString = d3.timeFormat('%d')(x)
+  switch (dateString.slice(dateString.length - 1)) {
+    case '1': {
+      return 'st'
+    }
+    case '2': {
+      return 'nd'
+    }
+    case '3': {
+      return 'rd'
+    }
+    default: {
+      return 'th'
+    }
+  }
+}
+const fullDateTimeFormat = x =>
+  d3.timeFormat(`%a %B %d${dateSuffix(x)} %Y at %H:%M`)(x)
 
 const isEveryOtherDay = x => Number(d3.timeFormat('%d')(x)) % 2 === 0
 
@@ -249,9 +269,21 @@ const drawAxes = (xScale, maxHeight) => {
   const timeline = getTimeline(xScale)
   d3.selectAll('.line-chart-xaxis').call(xAxis)
 
-  d3.select('#time')
-    .call(timeline)
-    .attr('class', 'legend')
+  d3.select('#time').call(timeline)
+
+  d3.selectAll('#time g.tick')
+    .append('circle')
+    .attr('fill', 'transparent')
+    .attr('r', 15)
+    .attr('y', -TIMELINE_HEIGHT)
+    .on('mouseout', () => d3.select('#dateTooltip').style('opacity', 0))
+    .on('mouseover', d => {
+      d3.select('#dateTooltip')
+        .text(fullDateTimeFormat(d))
+        .style('top', `${d3.event.pageY + 15}px`)
+        .style('left', `${d3.event.pageX - 15}px`)
+        .style('opacity', 1)
+    })
 }
 
 export const SearchValuesList = ({ values }) => {
@@ -309,6 +341,7 @@ export const SearchValuesList = ({ values }) => {
           />
         </svg>
       </div>
+      <div id="dateTooltip" />
       <div id="main" className={values.length ? '' : 'hidden'} />
     </div>
   )

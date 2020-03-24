@@ -64,3 +64,16 @@
 .tickLines {
   color: grey;
 }
+#dateTooltip {
+  position: absolute;
+  width: fit-content;
+  min-width: 30px;
+  opacity: 0;
+  background-color: white;
+  border-radius: 5px;
+  padding: 0 5px 5px;
+  font-size: 0.8em;
+  height: 15px;
+  color: rgba(128, 128, 128, 0.75);
+  box-shadow: rgb(128, 128, 128) 2px 2px 11px -4px;
+}
