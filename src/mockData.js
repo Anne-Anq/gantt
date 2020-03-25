@@ -56,9 +56,9 @@ export const mockData = [
       bg: '##3568ff'
     },
     detailContent: [
-      { label: 'Event', value: 'event3Name' },
-      { label: 'Type', value: 'yes' },
-      { label: 'priority', value: 'meidum' }
+      { label: 'Event', value: 'Event3Name' },
+      { label: 'Type', value: 'Yes' },
+      { label: 'priority', value: 'Meidum' }
     ]
   }
 ]

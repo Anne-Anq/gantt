@@ -148,6 +148,31 @@ const addScheduleRect = (gParentNode, eventsTitleWidth) => {
     .attr('fill', event => event.style.bg)
     .attr('rx', 5)
     .attr('class', 'scheduleRect')
+    .on('mouseout', () =>
+      d3
+        .select('#scheduleRectTooltip')
+        .style('opacity', 0)
+        .selectAll('div')
+        .remove()
+    )
+    .on('mouseover', d => {
+      const tooltip = d3.select('#scheduleRectTooltip')
+      const detailEnter = tooltip
+        .selectAll('div')
+        .data(d.detailContent.map((content, index) => ({ ...content, index })))
+        .enter()
+
+      detailEnter
+        .append('div')
+        .text(content => content.label)
+        .attr('class', 'detailLabel')
+      detailEnter.append('div').text(content => content.value)
+      tooltip.selectAll('div').sort((a, b) => a.index - b.index)
+      tooltip
+        .style('top', `${d3.event.pageY + 15}px`)
+        .style('left', `${d3.event.pageX - 15}px`)
+        .style('opacity', 1)
+    })
 }
 
 const redrawScheduleRect = xScale => {
@@ -341,7 +366,8 @@ export const SearchValuesList = ({ values }) => {
           />
         </svg>
       </div>
-      <div id="dateTooltip" />
+      <div id="dateTooltip" className="tooltip" />
+      <div id="scheduleRectTooltip" className="tooltip" />
       <div id="main" className={values.length ? '' : 'hidden'} />
     </div>
   )
