@@ -82,7 +82,8 @@
 }
 #scheduleRectTooltip {
   display: grid;
-  grid-template-columns: max-content 200px;
+  max-width: 350px;
+  grid-template-columns: max-content auto;
   grid-auto-rows: max-content;
 }
 #scheduleRectTooltip div {
@@ -95,6 +96,7 @@
   flex-wrap: wrap;
 }
 .detailLabel {
+  margin-top: 3px;
   font-size: 0.8em;
   text-transform: uppercase;
   font-weight: bold;
