@@ -5,6 +5,8 @@ import './style.css'
 import { addHours } from 'date-fns/esm'
 
 let transformEvent
+const DEFAULT_EVENT_TITLE_WIDTH = 100
+let titleWidth = DEFAULT_EVENT_TITLE_WIDTH
 
 const minDate = values =>
   min(values.flatMap(({ events }) => events.map(event => event.startTime)))
@@ -17,14 +19,16 @@ const TIMELINE_HEIGHT = EVENT_RECT_HEIGHT
 const LINE_PADDING = 5
 const LINE_HEIGHT = EVENT_RECT_HEIGHT + 2 * LINE_PADDING
 const PADDING_LEFT_TEXT = 28
-const CHAR_WIDTH = 10
+const HANDLE_WIDTH = 10
+// const CHAR_WIDTH = 10
 const TIMELINE_TICK_SIZE = 5
+
 const eventsHeight = eventNumber => eventNumber * LINE_HEIGHT
 const totalHeight = eventNumber => eventsHeight(eventNumber)
-const getEventsTitleWidth = values =>
-  Math.max(
-    ...values.flatMap(({ events }) => events.map(event => event.title.length))
-  ) * CHAR_WIDTH
+// const getDEFAULT_EVENT_TITLE_WIDTH = values =>
+//   Math.max(
+//     ...values.flatMap(({ events }) => events.map(event => event.title.length))
+//   ) * CHAR_WIDTH
 
 const createSearchValueDivs = values => {
   // add a div searchValueDiv for each searchvalue
@@ -108,14 +112,34 @@ const getBackgroundLineWidth = () => {
   return eventLineBackground ? eventLineBackground.getBBox().width : 0
 }
 
-const addTitleText = (gParentNode, eventsTitleWidth) =>
-  gParentNode
+const addTitleText = () =>
+  d3
+    .selectAll('.eventTitleSection')
+    .append('g')
+    // .attr('clip-path', 'url(.eventTitleClip)')
+    .attr('clip-path', event => `url(#eventTitleClip_${event.id})`)
     .append('text')
     .text(event => event.title)
     .attr('class', 'eventTitleText')
     .attr('y', LINE_HEIGHT / 2)
     .attr('x', PADDING_LEFT_TEXT)
-    .attr('width', eventsTitleWidth)
+// .attr('width', titleWidth)
+
+// const createDraggableHandle = (gParentNode, values) =>
+//   gParentNode
+//     .append('rect')
+//     .attr('class', 'dragHandle')
+//     .attr('width', HANDLE_WIDTH)
+//     .attr('height', '100%')
+//     .attr('x', titleWidth - HANDLE_WIDTH)
+//     .attr('y', 0)
+//     .attr('fill', 'purple')
+//     .call(
+//       d3.drag().on('drag', () => {
+//         titleWidth += d3.event.dx
+//         redraw(values)
+//       })
+//     )
 
 const getXScale = (values, eventScheduleWidth) => {
   const mindate = minDate(values)
@@ -127,22 +151,56 @@ const getXScale = (values, eventScheduleWidth) => {
   return xScale
 }
 
-const createClip = (gParentNode, eventsTitleWidth) =>
-  gParentNode
-    .append('defs')
-    .append('clipPath')
-    .attr('id', 'clip')
-    .append('rect')
-    .attr('width', '100%') // if this is removed clip size does not adjust
-    .attr('x', eventsTitleWidth)
-    .attr('y', 0)
-
-const addScheduleRect = (gParentNode, eventsTitleWidth) => {
+const createSections = (gParentNode, values) => {
   gParentNode
     .append('g')
-    .attr('clip-path', 'url(#clip)')
+    // .attr('id', event => `eventTitleSection_${event.id}`)
+    .attr('class', 'eventTitleSection')
+    .attr('x', 0)
+    .attr('y', 0)
+    .append('defs')
+    .append('clipPath')
+    .attr('id', event => `eventTitleClip_${event.id}`)
+    .attr('class', 'eventTitleClip')
     .append('rect')
-    .attr('transform', d => `translate(${eventsTitleWidth},0)`)
+    .attr('height', LINE_HEIGHT)
+
+  gParentNode
+    .append('rect')
+    .attr('class', 'dragHandle')
+    .attr('width', HANDLE_WIDTH)
+    .attr('height', LINE_HEIGHT)
+    .attr('y', 0)
+    .attr('fill', 'purple')
+    .call(
+      d3.drag().on('drag', () => {
+        titleWidth += d3.event.dx
+        redraw(values)
+      })
+    )
+
+  gParentNode
+    .append('g')
+    // .attr('id', event => `scheduleSection_${event.id}`)
+    .attr('class', 'scheduleSection')
+    // .attr('x', titleWidth)
+    .attr('y', 0)
+    .append('defs')
+    .append('clipPath')
+    // .attr('class', 'scheduleClip')
+    .attr('id', event => `scheduleClip_${event.id}`)
+    .append('rect')
+    .attr('height', LINE_HEIGHT)
+    .attr('width', '100%') // if this is removed clip size does not adjust
+}
+
+const addScheduleRect = () => {
+  d3.selectAll('.scheduleSection')
+    .append('g')
+    .attr('clip-path', event => `url(#scheduleClip_${event.id})`)
+    // .attr('clip-path', 'url(.scheduleClip)')
+    .append('rect')
+    // .attr('transform', d => `translate(${titleWidth},0)`)
     .attr('y', LINE_PADDING)
     .attr('height', EVENT_RECT_HEIGHT)
     .attr('fill', event => event.style.bg)
@@ -288,13 +346,13 @@ const getTimeline = xScale =>
     .tickSize(TIMELINE_TICK_SIZE)
     .tickFormat(x => getTicksFormat(xScale, x))
 
-const buildAxes = eventsTitleWidth => {
+const buildAxes = () => {
   d3.selectAll('.eventsSvg')
     .append('g')
-    .attr(
-      'transform',
-      d => `translate(${eventsTitleWidth},${eventsHeight(d.events.length)})`
-    )
+    // .attr(
+    //   'transform',
+    //   d => `translate(${titleWidth},${eventsHeight(d.events.length)})`
+    // )
     .attr('class', 'line-chart-xaxis')
 }
 
@@ -320,13 +378,42 @@ const drawAxes = (xScale, maxHeight) => {
     })
 }
 
-export const SearchValuesList = ({ values }) => {
-  const eventsTitleWidth = values.length ? getEventsTitleWidth(values) : 0
-
-  const searchValueDiv = createSearchValueDivs(values)
-  const maxHeight = totalHeight(
-    Math.max(...values.map(value => value.events.length))
+const redraw = values => {
+  const maxHeight = getMaxHeight(values)
+  const entireLineWidth = getBackgroundLineWidth()
+  const eventScheduleWidth = entireLineWidth - titleWidth
+  let xScale = getXScale(values, eventScheduleWidth)
+  if (d3.event && d3.event.transform) {
+    transformEvent = d3.event.transform
+  }
+  if (transformEvent) {
+    xScale = transformEvent.rescaleX(xScale)
+  }
+  redrawScheduleRect(xScale)
+  drawAxes(xScale, maxHeight)
+  // move handle
+  // d3.selectAll('.eventTitleText').attr('width', titleWidth)
+  d3.selectAll('.dragHandle').attr('x', titleWidth - HANDLE_WIDTH)
+  d3.selectAll('.eventTitleClip rect').attr('width', titleWidth - HANDLE_WIDTH)
+  d3.selectAll('.scheduleSection').attr(
+    'transform',
+    `translate(${titleWidth},0)`
   )
+  d3.selectAll('.line-chart-xaxis').attr(
+    'transform',
+    d => `translate(${titleWidth},${eventsHeight(d.events.length)})`
+  )
+  d3.select('#time').attr(
+    'transform',
+    `translate(${titleWidth},${TIMELINE_HEIGHT})`
+  )
+}
+
+const getMaxHeight = values =>
+  totalHeight(Math.max(...values.map(value => value.events.length)))
+
+export const SearchValuesList = ({ values }) => {
+  const searchValueDiv = createSearchValueDivs(values)
 
   // add a title div with collapse button
   addTitleDiv(searchValueDiv)
@@ -336,30 +423,18 @@ export const SearchValuesList = ({ values }) => {
   const eventLine = createEventLine(eventsSvg)
 
   addBackgroundLine(eventLine)
-  addTitleText(eventLine, eventsTitleWidth)
-  createClip(eventLine, eventsTitleWidth)
-  addScheduleRect(eventLine, eventsTitleWidth)
-  buildAxes(eventsTitleWidth)
 
-  const redraw = () => {
-    const entireLineWidth = getBackgroundLineWidth()
-    const eventScheduleWidth = entireLineWidth - eventsTitleWidth
-    let xScale = getXScale(values, eventScheduleWidth)
-    if (d3.event) {
-      transformEvent = d3.event.transform
-    }
-    if (transformEvent) {
-      xScale = transformEvent.rescaleX(xScale)
-    }
-    redrawScheduleRect(xScale)
-    drawAxes(xScale, maxHeight)
-  }
-  redraw()
-  window.addEventListener('resize', redraw)
+  createSections(eventLine, values)
+  addTitleText(eventLine)
+  // createDraggableHandle(eventLine)
+  addScheduleRect(eventLine)
+  buildAxes()
+  redraw(values)
+  window.addEventListener('resize', () => redraw(values))
   const zoom = d3
     .zoom()
     .scaleExtent([0.006, 6])
-    .on('zoom', redraw)
+    .on('zoom', () => redraw(values))
   eventsSvg.call(zoom)
   return (
     <div id="container">
@@ -371,7 +446,7 @@ export const SearchValuesList = ({ values }) => {
         >
           <g
             id="time"
-            transform={`translate(${eventsTitleWidth},${TIMELINE_HEIGHT})`}
+            // transform={`translate(${titleWidth},${TIMELINE_HEIGHT})`}
           />
         </svg>
       </div>

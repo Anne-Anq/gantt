@@ -54,9 +54,6 @@
 .eventTitleText {
   alignment-baseline: middle;
 }
-#clip rect {
-  height: 100%;
-}
 .tick {
   stroke-dasharray: 4;
   color: #a7a7a7;
