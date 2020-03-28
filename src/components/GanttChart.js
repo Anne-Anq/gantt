@@ -132,13 +132,13 @@ class GanttChart {
       .attr('class', 'collapseBtn')
       .on('click', this.collapseEventsDiv)
       .append('i')
-      .attr('id', d => `${d.searchValue}BtnI`)
+      .attr('id', value => `${value.searchValue}BtnI`)
       .attr('class', 'material-icons collapseBtnIcon')
       .text('keyboard_arrow_up')
 
     this.searchValueBtnI = searchValue => d3.select(`#${searchValue}BtnI`)
 
-    this.searchTitleValueDiv.append('div').text(d => d.searchValue)
+    this.searchTitleValueDiv.append('div').text(value => value.searchValue)
   }
 
   addEventsSvg = () => {
@@ -147,9 +147,9 @@ class GanttChart {
       .attr('class', 'eventsSvgDiv')
       .style(
         'height',
-        d => `${this.getTotalEventsSvgDivHeight(d.events.length)}px`
+        value => `${this.getTotalEventsSvgDivHeight(value.events.length)}px`
       )
-      .attr('id', d => `${d.searchValue}eventsSvgDiv`)
+      .attr('id', value => `${value.searchValue}eventsSvgDiv`)
 
     this.eventsSvgDiv = searchValue => d3.select(`#${searchValue}eventsSvgDiv`)
 
@@ -158,18 +158,22 @@ class GanttChart {
       .attr('class', 'eventsSvg')
   }
 
-  collapseEventsDiv = d => {
-    const currentContent = this.searchValueBtnI(d.searchValue).node()
+  collapseEventsDiv = value => {
+    const currentContent = this.searchValueBtnI(value.searchValue).node()
       .textContent
-    this.searchValueBtnI(d.searchValue).text(
+    this.searchValueBtnI(value.searchValue).text(
       currentContent === this.LOGO_DOWN ? this.LOGO_UP : this.LOGO_DOWN
     )
-    const currentHeight = this.eventsSvgDiv(d.searchValue).node().clientHeight
-    const maxHeight = d => this.getTotalEventsSvgDivHeight(d.events.length)
-    this.eventsSvgDiv(d.searchValue)
+    const currentHeight = this.eventsSvgDiv(value.searchValue).node()
+      .clientHeight
+    const maxHeight = value =>
+      this.getTotalEventsSvgDivHeight(value.events.length)
+    this.eventsSvgDiv(value.searchValue)
       .transition()
-      .duration(d => d.events.length * 200)
-      .style('height', d => (currentHeight ? '0px' : `${maxHeight(d)}px`))
+      .duration(value => value.events.length * 200)
+      .style('height', value =>
+        currentHeight ? '0px' : `${maxHeight(value)}px`
+      )
   }
 
   draw = values => {
