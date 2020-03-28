@@ -30,59 +30,6 @@ const TIMELINE_TICK_SIZE = 5
 const eventsHeight = eventNumber => eventNumber * LINE_HEIGHT
 const totalHeight = eventNumber => eventsHeight(eventNumber)
 
-const createSearchValueDivs = values => {
-  // add a div searchValueDiv for each searchvalue
-  const allValues = d3
-    .select('#main')
-    .selectAll('div')
-    .data(values, d => d.searchValue)
-  allValues.exit().remove()
-  return allValues
-    .enter()
-    .append('div')
-    .attr('class', 'searchValueDiv')
-    .merge(allValues)
-}
-
-const addTitleDiv = parentNode => {
-  const titleDiv = parentNode.append('div').attr('class', 'titleDiv')
-  titleDiv
-    .append('button')
-    .attr('class', 'collapseBtn')
-    .on('click', collapseEventsDiv)
-    .append('i')
-    .attr('id', d => `${d.searchValue}BtnI`)
-    .attr('class', 'material-icons collapseBtnIcon')
-    .text('keyboard_arrow_up')
-
-  titleDiv.append('div').text(d => d.searchValue)
-}
-
-const collapseEventsDiv = d => {
-  const up = 'keyboard_arrow_up'
-  const down = 'keyboard_arrow_down'
-  const thisButtonIcon = d3.select(`#${d.searchValue}BtnI`)
-  thisButtonIcon.text(thisButtonIcon.node().textContent === down ? up : down)
-  const thisEventsSvgDiv = d3.select(`#${d.searchValue}eventsSvgDiv`)
-  thisEventsSvgDiv
-    .transition()
-    .duration(d => d.events.length * 200)
-    .style('height', d =>
-      thisEventsSvgDiv.node().clientHeight
-        ? '0px'
-        : `${totalHeight(d.events.length)}px`
-    )
-}
-
-const createEventsSvg = parentNode => {
-  const eventsDiv = parentNode
-    .append('div')
-    .attr('class', 'eventsSvgDiv')
-    .style('height', d => `${totalHeight(d.events.length)}px`)
-    .attr('id', d => `${d.searchValue}eventsSvgDiv`)
-  return eventsDiv.append('svg').attr('class', 'eventsSvg')
-}
-
 const createEventLine = svgParentNode => {
   const event = svgParentNode.selectAll('g').data(
     d => d.events,
@@ -332,14 +279,9 @@ const getMaxHeight = values =>
   totalHeight(Math.max(...values.map(value => value.events.length)))
 
 export const SearchValuesListForRefOnly = ({ values }) => {
-  const searchValueDiv = createSearchValueDivs(values)
+  // const eventsSvg = createEventsSvg()
 
-  // add a title div with collapse button
-  addTitleDiv(searchValueDiv)
-  // add svg to show all the events
-  const eventsSvg = createEventsSvg(searchValueDiv)
-
-  const eventLine = createEventLine(eventsSvg)
+  const eventLine = createEventLine()
 
   addBackgroundLine(eventLine)
 
@@ -350,27 +292,12 @@ export const SearchValuesListForRefOnly = ({ values }) => {
   buildAxes()
   redraw(values)
   window.addEventListener('resize', () => redraw(values))
-  const zoom = d3
-    .zoom()
-    .scaleExtent([0.006, 6])
-    .on('zoom', () => redraw(values))
-  eventsSvg.call(zoom)
-  return (
-    <div id="container">
-      <div>
-        <svg
-          height={TIMELINE_HEIGHT}
-          width="100%"
-          className={values.length ? '' : 'hidden'}
-        >
-          <g id="time" />
-        </svg>
-      </div>
-      <div id="dateTooltip" className="tooltip" />
-      <div id="scheduleRectTooltip" className="tooltip" />
-      <div id="main" className={values.length ? '' : 'hidden'} />
-    </div>
-  )
+  // const zoom = d3
+  //   .zoom()
+  //   .scaleExtent([0.006, 6])
+  //   .on('zoom', () => redraw(values))
+  // eventsSvg.call(zoom)
+  return <div id="container"></div>
 }
 
 export const SearchValuesList = ({ values }) => {

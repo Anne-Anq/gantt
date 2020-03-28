@@ -10,7 +10,7 @@
 .searchValueDiv {
   width: -webkit-fill-available;
 }
-.titleDiv {
+.searchvalueTitleDiv {
   display: flex;
   height: 20px;
   background: linear-gradient(
