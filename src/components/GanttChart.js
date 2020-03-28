@@ -65,6 +65,21 @@ class GanttChart {
   //          <svg class="eventsSvg">             //addEventsSvg
   //            <g>                                 //addSingleEventGroup
   //              <rect/>                           //addEventLineBackground
+  //              <g>                               //addEventTitleSection
+  //                <defs>                          //addEventTitleSection
+  //                  <clipPath id=`url(#eventTitleClip_${event.id})`>
+  //                    <rect/>                     //addEventTitleSection
+  //                  </clipPath>                   //addEventTitleSection
+  //                </defs>                         //addEventTitleSection
+  //              </g>                              //addEventTitleSection
+  //              <rect/>                           //addDragHandle
+  //              <g>                               //addScheduleSection
+  //                <defs>                          //addScheduleSection
+  //                  <clipPath id=`url(#scheduleClip_${event.id})`>
+  //                    <rect/>                     //addScheduleSection
+  //                  </clipPath>                   //addScheduleSection
+  //                </defs>                         //addScheduleSection
+  //              </g>                              //addScheduleSection
   //            </g>                                //addSingleEventGroup
   //           +<g>                                 //addSingleEventGroup
   //          </svg>                              //addEventsSvg
