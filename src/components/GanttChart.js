@@ -79,6 +79,9 @@ class GanttChart {
   //                    <rect/>                     //addScheduleSection
   //                  </clipPath>                   //addScheduleSection
   //                </defs>                         //addScheduleSection
+  //                <g clipPath=`url(#scheduleClip_${event.id})`>
+  //                  <text/>                       //addTitleText
+  //                </g>                            //addTitleText
   //              </g>                              //addScheduleSection
   //            </g>                                //addSingleEventGroup
   //           +<g>                                 //addSingleEventGroup
@@ -219,7 +222,6 @@ class GanttChart {
 
     this.addEventLineBackground()
     this.addEventSections()
-    // addTitleText(eventLine)
     // addScheduleRect(eventLine)
   }
 
@@ -253,7 +255,19 @@ class GanttChart {
     this.eventTitleClipRect = eventTitleClip
       .append('rect')
       .attr('height', this.LINE_HEIGHT)
+
+    this.addTitleText()
   }
+
+  addTitleText = () =>
+    this.eventTitleSection
+      .append('g')
+      .attr('clip-path', event => this.getEventTitleClipUrl(event))
+      .append('text')
+      .text(event => event.title)
+      .attr('class', 'eventTitleText')
+      .attr('y', this.LINE_HEIGHT / 2)
+      .attr('x', this.PADDING_LEFT_TEXT)
 
   addDragHandle = () => {
     this.dragHandle = this.singleLineGroup
