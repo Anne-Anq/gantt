@@ -2,14 +2,8 @@ import React from 'react'
 import { min, max, addHours } from 'date-fns'
 import {
   gaugeToSpacingMap,
-  isEveryXHours,
-  isEveryXMinute,
-  isAtNoon,
-  HourMinuteFormat,
-  dateFormat,
   fullDateTimeFormat,
-  isEveryOtherDay,
-  every6hoursFormat
+  gaugeToFormatMap
 } from './utils'
 import * as d3 from 'd3'
 import './style.css'
@@ -253,20 +247,10 @@ const getTicksSpacing = xScale => {
 const getTicksFormat = (xScale, x) => {
   const gauge = getTimeScaleGauge(xScale)
   let ticksFormat
-  if (gauge < 2.5) {
-    ticksFormat = isEveryOtherDay(x) && isAtNoon(x) ? dateFormat(x) : ''
-  } else if (gauge < 5) {
-    ticksFormat = isAtNoon(x) ? dateFormat(x) : ''
-  } else if (gauge < 30) {
-    ticksFormat = isAtNoon(x) ? dateFormat(x) : every6hoursFormat(x)
-  } else if (gauge < 60) {
-    ticksFormat = isEveryXHours(x, 2) ? HourMinuteFormat(x) : ''
-  } else if (gauge < 120) {
-    ticksFormat = isEveryXHours(x, 1) ? HourMinuteFormat(x) : ''
-  } else if (gauge < 420) {
-    ticksFormat = isEveryXMinute(x, 30) ? HourMinuteFormat(x) : ''
-  } else {
-    ticksFormat = HourMinuteFormat(x)
+  for (const { maxGauge, format } of gaugeToFormatMap(x)) {
+    if (gauge < maxGauge) {
+      return (ticksFormat = format)
+    }
   }
   return ticksFormat
 }
