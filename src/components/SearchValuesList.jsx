@@ -1,8 +1,18 @@
 import React from 'react'
-import { min, max } from 'date-fns'
+import { min, max, addHours } from 'date-fns'
+import {
+  gaugeToSpacingMap,
+  isEveryXHours,
+  isEveryXMinute,
+  isAtNoon,
+  HourMinuteFormat,
+  dateFormat,
+  fullDateTimeFormat,
+  isEveryOtherDay,
+  every6hoursFormat
+} from './utils'
 import * as d3 from 'd3'
 import './style.css'
-import { addHours } from 'date-fns/esm'
 
 let transformEvent
 const DEFAULT_EVENT_TITLE_WIDTH = 100
@@ -20,15 +30,10 @@ const LINE_PADDING = 5
 const LINE_HEIGHT = EVENT_RECT_HEIGHT + 2 * LINE_PADDING
 const PADDING_LEFT_TEXT = 28
 const HANDLE_WIDTH = 10
-// const CHAR_WIDTH = 10
 const TIMELINE_TICK_SIZE = 5
 
 const eventsHeight = eventNumber => eventNumber * LINE_HEIGHT
 const totalHeight = eventNumber => eventsHeight(eventNumber)
-// const getDEFAULT_EVENT_TITLE_WIDTH = values =>
-//   Math.max(
-//     ...values.flatMap(({ events }) => events.map(event => event.title.length))
-//   ) * CHAR_WIDTH
 
 const createSearchValueDivs = values => {
   // add a div searchValueDiv for each searchvalue
@@ -116,30 +121,12 @@ const addTitleText = () =>
   d3
     .selectAll('.eventTitleSection')
     .append('g')
-    // .attr('clip-path', 'url(.eventTitleClip)')
     .attr('clip-path', event => `url(#eventTitleClip_${event.id})`)
     .append('text')
     .text(event => event.title)
     .attr('class', 'eventTitleText')
     .attr('y', LINE_HEIGHT / 2)
     .attr('x', PADDING_LEFT_TEXT)
-// .attr('width', titleWidth)
-
-// const createDraggableHandle = (gParentNode, values) =>
-//   gParentNode
-//     .append('rect')
-//     .attr('class', 'dragHandle')
-//     .attr('width', HANDLE_WIDTH)
-//     .attr('height', '100%')
-//     .attr('x', titleWidth - HANDLE_WIDTH)
-//     .attr('y', 0)
-//     .attr('fill', 'purple')
-//     .call(
-//       d3.drag().on('drag', () => {
-//         titleWidth += d3.event.dx
-//         redraw(values)
-//       })
-//     )
 
 const getXScale = (values, eventScheduleWidth) => {
   const mindate = minDate(values)
@@ -154,7 +141,6 @@ const getXScale = (values, eventScheduleWidth) => {
 const createSections = (gParentNode, values) => {
   gParentNode
     .append('g')
-    // .attr('id', event => `eventTitleSection_${event.id}`)
     .attr('class', 'eventTitleSection')
     .attr('x', 0)
     .attr('y', 0)
@@ -181,13 +167,10 @@ const createSections = (gParentNode, values) => {
 
   gParentNode
     .append('g')
-    // .attr('id', event => `scheduleSection_${event.id}`)
     .attr('class', 'scheduleSection')
-    // .attr('x', titleWidth)
     .attr('y', 0)
     .append('defs')
     .append('clipPath')
-    // .attr('class', 'scheduleClip')
     .attr('id', event => `scheduleClip_${event.id}`)
     .append('rect')
     .attr('height', LINE_HEIGHT)
@@ -198,9 +181,7 @@ const addScheduleRect = () => {
   d3.selectAll('.scheduleSection')
     .append('g')
     .attr('clip-path', event => `url(#scheduleClip_${event.id})`)
-    // .attr('clip-path', 'url(.scheduleClip)')
     .append('rect')
-    // .attr('transform', d => `translate(${titleWidth},0)`)
     .attr('y', LINE_PADDING)
     .attr('height', EVENT_RECT_HEIGHT)
     .attr('fill', event => event.style.bg)
@@ -257,59 +238,17 @@ const getTimeScaleGauge = xScale => {
 const getTicksSpacing = xScale => {
   const gauge = getTimeScaleGauge(xScale)
   let ticksSpacing
-  if (gauge < 4) {
-    ticksSpacing = d3.timeHour.every(12)
-  } else if (gauge < 20) {
-    ticksSpacing = d3.timeHour.every(6)
-  } else if (gauge < 30) {
-    ticksSpacing = d3.timeHour.every(2)
-  } else if (gauge < 60) {
-    ticksSpacing = d3.timeHour.every(1)
-  } else if (gauge < 120) {
-    ticksSpacing = d3.timeMinute.every(30)
-  } else if (gauge < 420) {
-    ticksSpacing = d3.timeMinute.every(15)
-  } else {
-    ticksSpacing = d3.timeMinute.every(5)
+
+  for (const { maxGauge, unit, spacing } of gaugeToSpacingMap) {
+    if (gauge < maxGauge) {
+      return (ticksSpacing =
+        unit === 'hour'
+          ? d3.timeHour.every(spacing)
+          : d3.timeMinute.every(spacing))
+    }
   }
   return ticksSpacing
 }
-
-const isEveryXHours = (timestamp, hoursSeparation) =>
-  Number(d3.timeFormat('%H')(timestamp)) % hoursSeparation === 0
-
-const isEveryXMinute = (timestamp, minutesSeparation) =>
-  Number(d3.timeFormat('%M')(timestamp)) % minutesSeparation === 0
-
-const isAtNoon = x => d3.timeFormat('%H')(x) === '12'
-
-const HourMinuteFormat = x => d3.timeFormat('%H:%M')(x)
-
-const dateFormat = x => d3.timeFormat('%d %b %y')(x)
-
-const dateSuffix = x => {
-  const dateString = d3.timeFormat('%d')(x)
-  switch (dateString.slice(dateString.length - 1)) {
-    case '1': {
-      return 'st'
-    }
-    case '2': {
-      return 'nd'
-    }
-    case '3': {
-      return 'rd'
-    }
-    default: {
-      return 'th'
-    }
-  }
-}
-const fullDateTimeFormat = x =>
-  d3.timeFormat(`%a %B %d${dateSuffix(x)} %Y at %H:%M`)(x)
-
-const isEveryOtherDay = x => Number(d3.timeFormat('%d')(x)) % 2 === 0
-
-const every6hoursFormat = x => (isEveryXHours(x, 6) ? HourMinuteFormat(x) : '')
 
 const getTicksFormat = (xScale, x) => {
   const gauge = getTimeScaleGauge(xScale)
@@ -349,10 +288,6 @@ const getTimeline = xScale =>
 const buildAxes = () => {
   d3.selectAll('.eventsSvg')
     .append('g')
-    // .attr(
-    //   'transform',
-    //   d => `translate(${titleWidth},${eventsHeight(d.events.length)})`
-    // )
     .attr('class', 'line-chart-xaxis')
 }
 
@@ -392,7 +327,6 @@ const redraw = values => {
   redrawScheduleRect(xScale)
   drawAxes(xScale, maxHeight)
   // move handle
-  // d3.selectAll('.eventTitleText').attr('width', titleWidth)
   d3.selectAll('.dragHandle').attr('x', titleWidth - HANDLE_WIDTH)
   d3.selectAll('.eventTitleClip rect').attr('width', titleWidth - HANDLE_WIDTH)
   d3.selectAll('.scheduleSection').attr(
@@ -444,10 +378,7 @@ export const SearchValuesList = ({ values }) => {
           width="100%"
           className={values.length ? '' : 'hidden'}
         >
-          <g
-            id="time"
-            // transform={`translate(${titleWidth},${TIMELINE_HEIGHT})`}
-          />
+          <g id="time" />
         </svg>
       </div>
       <div id="dateTooltip" className="tooltip" />
