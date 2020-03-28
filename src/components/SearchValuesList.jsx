@@ -30,20 +30,6 @@ const TIMELINE_TICK_SIZE = 5
 const eventsHeight = eventNumber => eventNumber * LINE_HEIGHT
 const totalHeight = eventNumber => eventsHeight(eventNumber)
 
-const createEventLine = svgParentNode => {
-  const event = svgParentNode.selectAll('g').data(
-    d => d.events,
-    event => event.id
-  )
-  event.exit().remove()
-  const eventLine = event
-    .enter()
-    .append('g')
-    .merge(event)
-    .attr('transform', (_d, i) => `translate(0,${i * LINE_HEIGHT})`)
-  return eventLine
-}
-
 const addBackgroundLine = gParentNode =>
   gParentNode
     .append('rect')
@@ -279,9 +265,7 @@ const getMaxHeight = values =>
   totalHeight(Math.max(...values.map(value => value.events.length)))
 
 export const SearchValuesListForRefOnly = ({ values }) => {
-  // const eventsSvg = createEventsSvg()
-
-  const eventLine = createEventLine()
+  const eventLine = ''
 
   addBackgroundLine(eventLine)
 

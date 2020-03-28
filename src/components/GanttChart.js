@@ -63,6 +63,9 @@ class GanttChart {
   //        </div>                                //addSearchValueTitleDiv
   //        <div id=`${d.searchValue}eventsSvgDiv`//addEventsSvg
   //          <svg class="eventsSvg">             //addEventsSvg
+  //            <g>                                 //addSingleEventGroup
+  //            </g>                                //addSingleEventGroup
+  //           +<g>                                 //addSingleEventGroup
   //          </svg>                              //addEventsSvg
   //        </div>                                //addEventsSvg
   //      </div>                               //createSearchValueDivs
@@ -80,6 +83,7 @@ class GanttChart {
   searchValueBtnI = () => {}
   eventsSvgDiv = () => {}
   eventsSvg
+  singleLineGroup
 
   init = () => {
     this.container = d3.select(`#${this.containerId}`)
@@ -142,22 +146,6 @@ class GanttChart {
     this.searchTitleValueDiv.append('div').text(value => value.searchValue)
   }
 
-  addEventsSvg = () => {
-    const maxHeight = value =>
-      this.getTotalEventsSvgDivHeight(value.events.length)
-    const allEventsventsSvgDivs = this.searchValueDiv
-      .append('div')
-      .attr('class', 'eventsSvgDiv')
-      .style('height', value => `${maxHeight(value)}px`)
-      .attr('id', value => `${value.searchValue}eventsSvgDiv`)
-
-    this.eventsSvgDiv = searchValue => d3.select(`#${searchValue}eventsSvgDiv`)
-
-    this.eventsSvg = allEventsventsSvgDivs
-      .append('svg')
-      .attr('class', 'eventsSvg')
-  }
-
   collapseEventsDiv = value => {
     const currentContent = this.searchValueBtnI(value.searchValue).node()
       .textContent
@@ -174,6 +162,38 @@ class GanttChart {
       )
   }
 
+  addEventsSvg = () => {
+    const maxHeight = value =>
+      this.getTotalEventsSvgDivHeight(value.events.length)
+    const allEventsventsSvgDivs = this.searchValueDiv
+      .append('div')
+      .attr('class', 'eventsSvgDiv')
+      .style('height', value => `${maxHeight(value)}px`)
+      .attr('id', value => `${value.searchValue}eventsSvgDiv`)
+
+    this.eventsSvgDiv = searchValue => d3.select(`#${searchValue}eventsSvgDiv`)
+
+    this.eventsSvg = allEventsventsSvgDivs
+      .append('svg')
+      .attr('class', 'eventsSvg')
+  }
+
+  addSingleEventGroup = () => {
+    const allEvents = this.eventsSvg.selectAll('g').data(
+      value => value.events,
+      event => event.id
+    )
+    allEvents.exit().remove()
+    this.singleLineGroup = allEvents
+      .enter()
+      .append('g')
+      .merge(allEvents)
+      .attr(
+        'transform',
+        (_event, eventIndex) => `translate(0,${eventIndex * this.LINE_HEIGHT})`
+      )
+  }
+
   draw = values => {
     if (!this.getIsInitiated()) {
       return this.init()
@@ -181,6 +201,7 @@ class GanttChart {
     this.setValues(values)
     this.toggleShowMainDivs()
     this.createSearchValueDivs()
+    this.addSingleEventGroup()
   }
 }
 
