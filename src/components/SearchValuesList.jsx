@@ -23,7 +23,7 @@ const EVENT_RECT_HEIGHT = 20
 const TIMELINE_HEIGHT = EVENT_RECT_HEIGHT
 const LINE_PADDING = 5
 const LINE_HEIGHT = EVENT_RECT_HEIGHT + 2 * LINE_PADDING
-const PADDING_LEFT_TEXT = 28
+
 const HANDLE_WIDTH = 10
 const TIMELINE_TICK_SIZE = 5
 
@@ -35,17 +35,6 @@ const getBackgroundLineWidth = () => {
   return eventLineBackground ? eventLineBackground.getBBox().width : 0
 }
 
-const addTitleText = () =>
-  d3
-    .selectAll('.eventTitleSection')
-    .append('g')
-    .attr('clip-path', event => `url(#eventTitleClip_${event.id})`)
-    .append('text')
-    .text(event => event.title)
-    .attr('class', 'eventTitleText')
-    .attr('y', LINE_HEIGHT / 2)
-    .attr('x', PADDING_LEFT_TEXT)
-
 const getXScale = (values, eventScheduleWidth) => {
   const mindate = minDate(values)
   const maxdate = maxDate(values)
@@ -54,52 +43,6 @@ const getXScale = (values, eventScheduleWidth) => {
     .domain([mindate, maxdate])
     .range([0, eventScheduleWidth])
   return xScale
-}
-
-const addScheduleRect = () => {
-  d3.selectAll('.scheduleSection')
-    .append('g')
-    .attr('clip-path', event => `url(#scheduleClip_${event.id})`)
-    .append('rect')
-    .attr('y', LINE_PADDING)
-    .attr('height', EVENT_RECT_HEIGHT)
-    .attr('fill', event => event.style.bg)
-    .attr('rx', 5)
-    .attr('class', 'scheduleRect')
-    .on('mouseout', () =>
-      d3
-        .select('#scheduleRectTooltip')
-        .style('opacity', 0)
-        .selectAll('div')
-        .remove()
-    )
-    .on('mouseover', d => {
-      const tooltip = d3.select('#scheduleRectTooltip')
-      const detailEnter = tooltip
-        .selectAll('div')
-        .data(d.detailContent.map((content, index) => ({ ...content, index })))
-        .enter()
-
-      detailEnter
-        .append('div')
-        .text(content => content.label)
-        .attr('class', 'detailLabel')
-      detailEnter.append('div').text(content => content.value)
-      tooltip.selectAll('div').sort((a, b) => a.index - b.index)
-      tooltip
-        .style('top', `${d3.event.pageY + 15}px`)
-        .style(
-          'left',
-          `${
-            d3.event.pageX - 15 + tooltip.node().clientWidth <
-            d3.select('#container').node().clientWidth
-              ? d3.event.pageX - 15
-              : d3.select('#container').node().clientWidth -
-                tooltip.node().clientWidth
-          }px`
-        )
-        .style('opacity', 1)
-    })
 }
 
 const redrawScheduleRect = xScale => {
@@ -216,11 +159,6 @@ const getMaxHeight = values =>
   totalHeight(Math.max(...values.map(value => value.events.length)))
 
 export const SearchValuesListForRefOnly = ({ values }) => {
-  const eventLine = ''
-
-  addTitleText(eventLine)
-  // createDraggableHandle(eventLine)
-  addScheduleRect(eventLine)
   buildAxes()
   redraw(values)
   window.addEventListener('resize', () => redraw(values))

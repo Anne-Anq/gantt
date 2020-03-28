@@ -44,6 +44,7 @@ class GanttChart {
   LOGO_UP = 'keyboard_arrow_up'
   LOGO_DOWN = 'keyboard_arrow_down'
   TRANSITION_DURATION = 200
+  TOOLTIP_PADDING = 15
 
   //  <div id="container">                  //createMainDivs
   //   <div id="timelineDiv">               //createMainDivs
@@ -57,11 +58,11 @@ class GanttChart {
   //      <div class="searchValueDiv">         //createSearchValueDivs
   //        <div class="searchValueTitleDiv">     //addSearchValueTitleDiv
   //          <button class="collapseBtn">        //addSearchValueTitleDiv
-  //            <i id=`${d.searchValue}BtnI`/>    //addSearchValueTitleDiv
+  //            <i id=`${value.searchValue}BtnI`/>    //addSearchValueTitleDiv
   //          </button>                           //addSearchValueTitleDiv
   //          <div>                               //addSearchValueTitleDiv
   //        </div>                                //addSearchValueTitleDiv
-  //        <div id=`${d.searchValue}eventsSvgDiv`//addEventsSvg
+  //        <div id=`${value.searchValue}eventsSvgDiv`//addEventsSvg
   //          <svg class="eventsSvg">             //addEventsSvg
   //            <g>                                 //addSingleEventGroup
   //              <rect/>                           //addEventLineBackground
@@ -71,6 +72,9 @@ class GanttChart {
   //                    <rect/>                     //addEventTitleSection
   //                  </clipPath>                   //addEventTitleSection
   //                </defs>                         //addEventTitleSection
+  //                <g clipPath=`url(#eventTitleClip_${event.id})`>
+  //                  <text/>                       //addTitleText
+  //                </g>                            //addTitleText
   //              </g>                              //addEventTitleSection
   //              <rect/>                           //addDragHandle
   //              <g>                               //addScheduleSection
@@ -80,8 +84,8 @@ class GanttChart {
   //                  </clipPath>                   //addScheduleSection
   //                </defs>                         //addScheduleSection
   //                <g clipPath=`url(#scheduleClip_${event.id})`>
-  //                  <text/>                       //addTitleText
-  //                </g>                            //addTitleText
+  //                  <rect/>                       //addScheduleRect
+  //                </g>                            //addScheduleRect
   //              </g>                              //addScheduleSection
   //            </g>                                //addSingleEventGroup
   //           +<g>                                 //addSingleEventGroup
@@ -110,6 +114,7 @@ class GanttChart {
   dragHandle
   scheduleSection
   getScheduleClipUrl = () => {}
+  scheduleRect
 
   init = () => {
     this.container = d3.select(`#${this.containerId}`)
@@ -259,7 +264,7 @@ class GanttChart {
     this.addTitleText()
   }
 
-  addTitleText = () =>
+  addTitleText = () => {
     this.eventTitleSection
       .append('g')
       .attr('clip-path', event => this.getEventTitleClipUrl(event))
@@ -268,6 +273,7 @@ class GanttChart {
       .attr('class', 'eventTitleText')
       .attr('y', this.LINE_HEIGHT / 2)
       .attr('x', this.PADDING_LEFT_TEXT)
+  }
 
   addDragHandle = () => {
     this.dragHandle = this.singleLineGroup
@@ -297,6 +303,63 @@ class GanttChart {
       .append('rect')
       .attr('height', this.LINE_HEIGHT)
       .attr('width', '100%') // if this is removed clip size does not adjust
+
+    this.addScheduleRect()
+  }
+
+  addScheduleRect = () => {
+    this.scheduleRect = this.scheduleSection
+      .append('g')
+      .attr('clip-path', event => this.getScheduleClipUrl(event))
+      .append('rect')
+      .attr('y', this.LINE_PADDING)
+      .attr('height', this.EVENT_RECT_HEIGHT)
+      .attr('fill', event => event.style.bg)
+      .attr('rx', 5)
+
+    this.scheduleRect
+      .on('mouseout', () => {
+        this.scheduleRectTooltip
+          .style('opacity', 0)
+          .selectAll('div')
+          .remove()
+      })
+      .on('mouseover', event => {
+        this.addDataToScheduleTooltip(event)
+        this.makeScheduleTooltipVisible()
+      })
+  }
+
+  addDataToScheduleTooltip = event => {
+    const contentWithIndex = event.detailContent.map((content, index) => ({
+      ...content,
+      index
+    }))
+    const detailEnter = this.scheduleRectTooltip
+      .selectAll('div')
+      .data(contentWithIndex)
+      .enter()
+
+    detailEnter
+      .append('div')
+      .text(content => content.label)
+      .attr('class', 'detailLabel')
+    detailEnter.append('div').text(content => content.value)
+    this.scheduleRectTooltip.selectAll('div').sort((a, b) => a.index - b.index)
+  }
+
+  makeScheduleTooltipVisible = () => {
+    const tooltipWidth = this.scheduleRectTooltip.node().clientWidth
+    const containerWidth = this.container.node().clientWidth
+    const leftOffset =
+      d3.event.pageX - this.TOOLTIP_PADDING + tooltipWidth < containerWidth
+        ? d3.event.pageX - this.TOOLTIP_PADDING
+        : containerWidth - tooltipWidth
+
+    this.scheduleRectTooltip
+      .style('top', `${d3.event.pageY + this.TOOLTIP_PADDING}px`)
+      .style('left', `${leftOffset}px`)
+      .style('opacity', 1)
   }
 
   draw = values => {
