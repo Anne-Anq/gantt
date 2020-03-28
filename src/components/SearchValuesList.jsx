@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { min, max, addHours } from 'date-fns'
 import {
   gaugeToSpacingMap,
@@ -6,6 +6,7 @@ import {
   gaugeToFormatMap
 } from './utils'
 import * as d3 from 'd3'
+import { GanttChart } from './GanttChart'
 import './style.css'
 
 let transformEvent
@@ -330,7 +331,7 @@ const redraw = values => {
 const getMaxHeight = values =>
   totalHeight(Math.max(...values.map(value => value.events.length)))
 
-export const SearchValuesList = ({ values }) => {
+export const SearchValuesListForRefOnly = ({ values }) => {
   const searchValueDiv = createSearchValueDivs(values)
 
   // add a title div with collapse button
@@ -370,4 +371,25 @@ export const SearchValuesList = ({ values }) => {
       <div id="main" className={values.length ? '' : 'hidden'} />
     </div>
   )
+}
+
+export const SearchValuesList = ({ values }) => {
+  const [mounted, setMounted] = useState(false)
+
+  const ganttChart = useRef(new GanttChart('container'))
+  const { draw } = ganttChart.current
+
+  useEffect(() => {
+    if (mounted) {
+      draw(values)
+    }
+  }, [mounted, draw, values])
+
+  useEffect(() => {
+    if (!mounted) {
+      setMounted(true)
+    }
+  }, [mounted, setMounted])
+
+  return <div id="container" />
 }
