@@ -63,6 +63,7 @@
 }
 .tooltip {
   position: absolute;
+  top: 0;
   width: fit-content;
   min-width: 30px;
   opacity: 0;
