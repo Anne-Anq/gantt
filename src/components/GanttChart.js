@@ -43,6 +43,7 @@ class GanttChart {
   TIMELINE_TICK_SIZE = 5
   LOGO_UP = 'keyboard_arrow_up'
   LOGO_DOWN = 'keyboard_arrow_down'
+  TRANSITION_DURATION = 200
 
   //  <div id="container">                  //createMainDivs
   //   <div id="timelineDiv">               //createMainDivs
@@ -170,7 +171,7 @@ class GanttChart {
       this.getTotalEventsSvgDivHeight(value.events.length)
     this.eventsSvgDiv(value.searchValue)
       .transition()
-      .duration(value => value.events.length * 200)
+      .duration(value => value.events.length * this.TRANSITION_DURATION)
       .style('height', value =>
         currentHeight ? '0px' : `${maxHeight(value)}px`
       )
