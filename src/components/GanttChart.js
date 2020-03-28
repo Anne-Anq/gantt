@@ -81,11 +81,17 @@ class GanttChart {
   main
   searchValueDiv
   searchTitleValueDiv
-  searchValueBtnI = () => {}
-  eventsSvgDiv = () => {}
+  getSearchValueBtnI = () => {}
+  getEventsSvgDiv = () => {}
   eventsSvg
   singleLineGroup
   eventLineBackground
+  eventTitleSection
+  getEventTitleClipUrl = () => {}
+  eventTitleClipRect
+  dragHandle
+  scheduleSection
+  getScheduleClipUrl = () => {}
 
   init = () => {
     this.container = d3.select(`#${this.containerId}`)
@@ -143,20 +149,20 @@ class GanttChart {
       .attr('class', 'material-icons collapseBtnIcon')
       .text('keyboard_arrow_up')
 
-    this.searchValueBtnI = searchValue => d3.select(`#${searchValue}BtnI`)
+    this.getSearchValueBtnI = searchValue => d3.select(`#${searchValue}BtnI`)
 
     this.searchTitleValueDiv.append('div').text(value => value.searchValue)
   }
 
   collapseEventsDiv = value => {
-    const currentContent = this.searchValueBtnI(value.searchValue).node()
+    const currentContent = this.getSearchValueBtnI(value.searchValue).node()
       .textContent
-    this.searchValueBtnI(value.searchValue).text(
+    this.getSearchValueBtnI(value.searchValue).text(
       currentContent === this.LOGO_DOWN ? this.LOGO_UP : this.LOGO_DOWN
     )
     const maxHeight = value =>
       this.getTotalEventsSvgDivHeight(value.events.length)
-    this.eventsSvgDiv(value.searchValue)
+    this.getEventsSvgDiv(value.searchValue)
       .transition()
       .duration(value => value.events.length * this.TRANSITION_DURATION)
       .style('height', value =>
@@ -173,7 +179,8 @@ class GanttChart {
       .style('height', value => `${maxHeight(value)}px`)
       .attr('id', value => `${value.searchValue}eventsSvgDiv`)
 
-    this.eventsSvgDiv = searchValue => d3.select(`#${searchValue}eventsSvgDiv`)
+    this.getEventsSvgDiv = searchValue =>
+      d3.select(`#${searchValue}eventsSvgDiv`)
 
     this.eventsSvg = allEventsventsSvgDivs
       .append('svg')
@@ -196,7 +203,7 @@ class GanttChart {
       )
 
     this.addEventLineBackground()
-    // createSections(eventLine, values)
+    this.addEventSections()
     // addTitleText(eventLine)
     // addScheduleRect(eventLine)
   }
@@ -209,6 +216,60 @@ class GanttChart {
       .attr('class', (_d, i) => `${i % 2 === 0 ? 'evenLine' : 'oddLine'}`)
   }
 
+  addEventSections = () => {
+    this.addEventTitleSection()
+    this.addDragHandle()
+    this.addScheduleSection()
+  }
+
+  addEventTitleSection = () => {
+    this.eventTitleSection = this.singleLineGroup
+      .append('g')
+      .attr('x', 0) // remove ?
+      .attr('y', 0) // remove ?
+
+    const eventTitleClip = this.eventTitleSection
+      .append('defs')
+      .append('clipPath')
+      .attr('id', event => `eventTitleClip_${event.id}`)
+
+    this.getEventTitleClipUrl = event => `url(#eventTitleClip_${event.id})`
+
+    this.eventTitleClipRect = eventTitleClip
+      .append('rect')
+      .attr('height', this.LINE_HEIGHT)
+  }
+
+  addDragHandle = () => {
+    this.dragHandle = this.singleLineGroup
+      .append('rect')
+      .attr('width', this.HANDLE_WIDTH)
+      .attr('height', this.LINE_HEIGHT)
+      .attr('y', 0) // remove?
+      .attr('fill', 'purple') // temp
+      .call(
+        d3.drag().on('drag', () => {
+          this.setTitleWidth(this.getTitleWidth() + d3.event.dx)
+          this.redraw()
+        })
+      )
+  }
+
+  addScheduleSection = () => {
+    this.scheduleSection = this.singleLineGroup.append('g').attr('y', 0) // remove ?
+    const scheduleClip = this.scheduleSection
+      .append('defs')
+      .append('clipPath')
+      .attr('id', event => `scheduleClip_${event.id}`)
+
+    this.getScheduleClipUrl = event => `url(#scheduleClip_${event.id})`
+
+    scheduleClip
+      .append('rect')
+      .attr('height', this.LINE_HEIGHT)
+      .attr('width', '100%') // if this is removed clip size does not adjust
+  }
+
   draw = values => {
     if (!this.getIsInitiated()) {
       return this.init()
@@ -217,6 +278,10 @@ class GanttChart {
     this.toggleShowMainDivs()
     this.createSearchValueDivs()
     this.addSingleEventGroup()
+  }
+
+  redraw = () => {
+    console.log('redrawing', this.getTitleWidth())
   }
 }
 

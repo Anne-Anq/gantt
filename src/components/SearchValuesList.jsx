@@ -56,45 +56,6 @@ const getXScale = (values, eventScheduleWidth) => {
   return xScale
 }
 
-const createSections = (gParentNode, values) => {
-  gParentNode
-    .append('g')
-    .attr('class', 'eventTitleSection')
-    .attr('x', 0)
-    .attr('y', 0)
-    .append('defs')
-    .append('clipPath')
-    .attr('id', event => `eventTitleClip_${event.id}`)
-    .attr('class', 'eventTitleClip')
-    .append('rect')
-    .attr('height', LINE_HEIGHT)
-
-  gParentNode
-    .append('rect')
-    .attr('class', 'dragHandle')
-    .attr('width', HANDLE_WIDTH)
-    .attr('height', LINE_HEIGHT)
-    .attr('y', 0)
-    .attr('fill', 'purple')
-    .call(
-      d3.drag().on('drag', () => {
-        titleWidth += d3.event.dx
-        redraw(values)
-      })
-    )
-
-  gParentNode
-    .append('g')
-    .attr('class', 'scheduleSection')
-    .attr('y', 0)
-    .append('defs')
-    .append('clipPath')
-    .attr('id', event => `scheduleClip_${event.id}`)
-    .append('rect')
-    .attr('height', LINE_HEIGHT)
-    .attr('width', '100%') // if this is removed clip size does not adjust
-}
-
 const addScheduleRect = () => {
   d3.selectAll('.scheduleSection')
     .append('g')
@@ -257,7 +218,6 @@ const getMaxHeight = values =>
 export const SearchValuesListForRefOnly = ({ values }) => {
   const eventLine = ''
 
-  createSections(eventLine, values)
   addTitleText(eventLine)
   // createDraggableHandle(eventLine)
   addScheduleRect(eventLine)
