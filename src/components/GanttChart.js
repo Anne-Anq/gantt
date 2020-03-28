@@ -143,13 +143,12 @@ class GanttChart {
   }
 
   addEventsSvg = () => {
+    const maxHeight = value =>
+      this.getTotalEventsSvgDivHeight(value.events.length)
     const allEventsventsSvgDivs = this.searchValueDiv
       .append('div')
       .attr('class', 'eventsSvgDiv')
-      .style(
-        'height',
-        value => `${this.getTotalEventsSvgDivHeight(value.events.length)}px`
-      )
+      .style('height', value => `${maxHeight(value)}px`)
       .attr('id', value => `${value.searchValue}eventsSvgDiv`)
 
     this.eventsSvgDiv = searchValue => d3.select(`#${searchValue}eventsSvgDiv`)
@@ -165,15 +164,13 @@ class GanttChart {
     this.searchValueBtnI(value.searchValue).text(
       currentContent === this.LOGO_DOWN ? this.LOGO_UP : this.LOGO_DOWN
     )
-    const currentHeight = this.eventsSvgDiv(value.searchValue).node()
-      .clientHeight
     const maxHeight = value =>
       this.getTotalEventsSvgDivHeight(value.events.length)
     this.eventsSvgDiv(value.searchValue)
       .transition()
       .duration(value => value.events.length * this.TRANSITION_DURATION)
       .style('height', value =>
-        currentHeight ? '0px' : `${maxHeight(value)}px`
+        currentContent === this.LOGO_DOWN ? `${maxHeight(value)}px` : '0px'
       )
   }
 
