@@ -30,16 +30,6 @@ const TIMELINE_TICK_SIZE = 5
 const eventsHeight = eventNumber => eventNumber * LINE_HEIGHT
 const totalHeight = eventNumber => eventsHeight(eventNumber)
 
-const addBackgroundLine = gParentNode =>
-  gParentNode
-    .append('rect')
-    .attr('height', LINE_HEIGHT)
-    .attr('width', '100%') // removing this prevents rescale on window resize
-    .attr(
-      'class',
-      (_d, i) => `eventLineBackground ${i % 2 === 0 ? 'evenLine' : 'oddLine'}`
-    )
-
 const getBackgroundLineWidth = () => {
   const eventLineBackground = d3.select('.eventLineBackground').node()
   return eventLineBackground ? eventLineBackground.getBBox().width : 0
@@ -266,8 +256,6 @@ const getMaxHeight = values =>
 
 export const SearchValuesListForRefOnly = ({ values }) => {
   const eventLine = ''
-
-  addBackgroundLine(eventLine)
 
   createSections(eventLine, values)
   addTitleText(eventLine)

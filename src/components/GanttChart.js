@@ -64,6 +64,7 @@ class GanttChart {
   //        <div id=`${d.searchValue}eventsSvgDiv`//addEventsSvg
   //          <svg class="eventsSvg">             //addEventsSvg
   //            <g>                                 //addSingleEventGroup
+  //              <rect/>                           //addEventLineBackground
   //            </g>                                //addSingleEventGroup
   //           +<g>                                 //addSingleEventGroup
   //          </svg>                              //addEventsSvg
@@ -84,6 +85,7 @@ class GanttChart {
   eventsSvgDiv = () => {}
   eventsSvg
   singleLineGroup
+  eventLineBackground
 
   init = () => {
     this.container = d3.select(`#${this.containerId}`)
@@ -192,6 +194,19 @@ class GanttChart {
         'transform',
         (_event, eventIndex) => `translate(0,${eventIndex * this.LINE_HEIGHT})`
       )
+
+    this.addEventLineBackground()
+    // createSections(eventLine, values)
+    // addTitleText(eventLine)
+    // addScheduleRect(eventLine)
+  }
+
+  addEventLineBackground = () => {
+    this.eventLineBackground = this.singleLineGroup
+      .append('rect')
+      .attr('height', this.LINE_HEIGHT)
+      .attr('width', '100%') // removing this prevents rescale on window resize
+      .attr('class', (_d, i) => `${i % 2 === 0 ? 'evenLine' : 'oddLine'}`)
   }
 
   draw = values => {
