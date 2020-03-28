@@ -97,11 +97,11 @@ const getTimeline = xScale =>
     .tickSize(TIMELINE_TICK_SIZE)
     .tickFormat(x => getTicksFormat(xScale, x))
 
-const buildAxes = () => {
-  d3.selectAll('.eventsSvg')
-    .append('g')
-    .attr('class', 'line-chart-xaxis')
-}
+// const buildAxes = () => {
+//   d3.selectAll('.eventsSvg')
+//     .append('g')
+//     .attr('class', 'line-chart-xaxis')
+// }
 
 const drawAxes = (xScale, maxHeight) => {
   const xAxis = getXAxis(xScale, maxHeight)
@@ -159,7 +159,7 @@ const getMaxHeight = values =>
   totalHeight(Math.max(...values.map(value => value.events.length)))
 
 export const SearchValuesListForRefOnly = ({ values }) => {
-  buildAxes()
+  // buildAxes()
   redraw(values)
   window.addEventListener('resize', () => redraw(values))
   // const zoom = d3

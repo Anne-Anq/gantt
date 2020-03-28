@@ -89,6 +89,7 @@ class GanttChart {
   //              </g>                              //addScheduleSection
   //            </g>                                //addSingleEventGroup
   //           +<g>                                 //addSingleEventGroup
+  //            <g/>                                //addLineAxisGroup
   //          </svg>                              //addEventsSvg
   //        </div>                                //addEventsSvg
   //      </div>                               //createSearchValueDivs
@@ -115,6 +116,7 @@ class GanttChart {
   scheduleSection
   getScheduleClipUrl = () => {}
   scheduleRect
+  lineAxisGroup
 
   init = () => {
     this.container = d3.select(`#${this.containerId}`)
@@ -208,6 +210,9 @@ class GanttChart {
     this.eventsSvg = allEventsventsSvgDivs
       .append('svg')
       .attr('class', 'eventsSvg')
+
+    this.addSingleEventGroup()
+    this.addLineAxisGroup()
   }
 
   addSingleEventGroup = () => {
@@ -227,7 +232,6 @@ class GanttChart {
 
     this.addEventLineBackground()
     this.addEventSections()
-    // addScheduleRect(eventLine)
   }
 
   addEventLineBackground = () => {
@@ -362,6 +366,9 @@ class GanttChart {
       .style('opacity', 1)
   }
 
+  addLineAxisGroup = () => {
+    this.lineAxisGroup = this.eventsSvg.append('g')
+  }
   draw = values => {
     if (!this.getIsInitiated()) {
       return this.init()
@@ -369,7 +376,6 @@ class GanttChart {
     this.setValues(values)
     this.toggleShowMainDivs()
     this.createSearchValueDivs()
-    this.addSingleEventGroup()
   }
 
   redraw = () => {
