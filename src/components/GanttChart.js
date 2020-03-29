@@ -70,7 +70,7 @@ class GanttChart {
   LINE_PADDING = 5
   LINE_HEIGHT = this.EVENT_RECT_HEIGHT + 2 * this.LINE_PADDING
   PADDING_LEFT_TEXT = 28
-  HANDLE_WIDTH = 10
+  HANDLE_WIDTH = 5
   TIMELINE_TICK_SIZE = 5
   LOGO_UP = 'keyboard_arrow_up'
   LOGO_DOWN = 'keyboard_arrow_down'
@@ -84,7 +84,7 @@ class GanttChart {
   scheduleRectTooltip
   main
   searchValueDiv
-  searchTitleValueDiv
+  searchValueTitleDiv
   getSearchValueBtnI = () => {}
   getEventsSvgDiv = () => {}
   eventsSvg
@@ -151,10 +151,10 @@ class GanttChart {
   }
 
   addSearchValueTitleDiv = () => {
-    this.searchTitleValueDiv = this.searchValueDiv
+    this.searchValueTitleDiv = this.searchValueDiv
       .append('div')
       .attr('class', 'searchvalueTitleDiv')
-    this.searchTitleValueDiv
+    this.searchValueTitleDiv
       .append('button')
       .attr('class', 'collapseBtn')
       .on('click', this.collapseEventsDiv)
@@ -165,7 +165,7 @@ class GanttChart {
 
     this.getSearchValueBtnI = searchValue => d3.select(`#${searchValue}BtnI`)
 
-    this.searchTitleValueDiv.append('div').text(value => value.searchValue)
+    this.searchValueTitleDiv.append('div').text(value => value.searchValue)
   }
 
   collapseEventsDiv = value => {
@@ -292,6 +292,7 @@ class GanttChart {
       .attr('width', this.HANDLE_WIDTH)
       .attr('height', this.LINE_HEIGHT)
       .attr('fill', this.getHandleGradient())
+      .style('cursor', 'ew-resize')
       .call(d3.drag().on('drag', this.handleEvent('drag')))
   }
 
@@ -312,6 +313,7 @@ class GanttChart {
       .append('rect')
       .attr('fill', 'rgba(255, 255, 255, 0.5)')
       .attr('height', this.LINE_HEIGHT)
+      .style('cursor', 'all-scroll')
 
     this.addScheduleRect()
   }
@@ -325,6 +327,7 @@ class GanttChart {
       .attr('height', this.EVENT_RECT_HEIGHT)
       .attr('fill', event => event.style.bg)
       .attr('rx', 5)
+      .style('cursor', 'pointer')
 
     this.scheduleRect
       .on('mouseout', () => {
@@ -413,6 +416,7 @@ class GanttChart {
         .tickSize(this.TIMELINE_TICK_SIZE)
         .tickFormat(x => getTicksFormat(XScale, x))
     )
+    this.getTimeLegendGroupTicks().style('cursor', 'default')
     this.addDateTooltipOnLegendHover()
   }
 
