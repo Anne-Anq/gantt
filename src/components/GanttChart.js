@@ -76,11 +76,16 @@ class GanttChart {
       clickRect: event => {
         d3.event.stopPropagation()
         if (this.getIsCtrlKeyDown()) {
-          if (this.getSelectedEvents().includes(event.id)) {
-            this.unselectEvent(event.id)
+          if (this.isEventSelected(event.id)) {
+            this.unselectEvent(event)
           } else {
-            this.selectEvent(event.id)
+            this.selectEvent(event)
           }
+        }
+      },
+      dragRect: () => {
+        if (this.isEventSelected(d3.event.subject.id)) {
+          this.moveEvents(d3.event.subject, d3.event.x)
         }
       },
       keydown: () => {
@@ -102,14 +107,17 @@ class GanttChart {
     return eventActionMap[event]
   }
 
-  selectEvent = eventId => {
-    this.setSelectedEvents([...this.getSelectedEvents(), eventId])
+  isEventSelected = eventId =>
+    !!this.getSelectedEvents().find(({ id }) => id === eventId)
+
+  selectEvent = event => {
+    this.setSelectedEvents([...this.getSelectedEvents(), event])
     this.formatSelectedEvents()
   }
 
-  unselectEvent = eventId => {
+  unselectEvent = event => {
     this.setSelectedEvents(
-      this.getSelectedEvents().filter(id => id !== eventId)
+      this.getSelectedEvents().filter(({ id }) => id !== event.id)
     )
     this.formatSelectedEvents()
   }
@@ -397,11 +405,12 @@ class GanttChart {
         this.makeScheduleTooltipVisible()
       })
       .on('click', this.handleEvent('clickRect'))
+      .call(d3.drag().on('drag', this.handleEvent('dragRect')))
   }
 
   formatSelectedEvents = () => {
     this.scheduleRect
-      .filter(({ id }) => this.getSelectedEvents().includes(id))
+      .filter(({ id }) => this.isEventSelected(id))
       .attr('fill', event =>
         tinycolor(event.style.bg)
           .lighten(20)
@@ -411,16 +420,16 @@ class GanttChart {
       .attr('stroke-width', 2)
 
     this.eventTitleText
-      .filter(({ id }) => this.getSelectedEvents().includes(id))
+      .filter(({ id }) => this.isEventSelected(id))
       .style('font-weight', 'bold')
 
     this.scheduleRect
-      .filter(({ id }) => !this.getSelectedEvents().includes(id))
+      .filter(({ id }) => !this.isEventSelected(id))
       .attr('stroke-width', 0)
       .attr('fill', event => event.style.bg)
 
     this.eventTitleText
-      .filter(({ id }) => !this.getSelectedEvents().includes(id))
+      .filter(({ id }) => !this.isEventSelected(id))
       .style('font-weight', 'normal')
   }
 
@@ -526,6 +535,17 @@ class GanttChart {
     this.scheduleRect
       .attr('x', event => XScale(event.startTime))
       .attr('width', event => XScale(event.endTime) - XScale(event.startTime))
+  }
+
+  moveEvents = (targetEvent, xCoord) => {
+    const XScale = this.scale.get()
+    this.scheduleRect
+      .filter(({ id }) => this.isEventSelected(id))
+      .attr(
+        'x',
+        event =>
+          xCoord + XScale(event.startTime) - XScale(targetEvent.startTime)
+      )
   }
 
   moveHandle = () => {
