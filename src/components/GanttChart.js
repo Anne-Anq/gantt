@@ -40,6 +40,14 @@ class GanttChart {
   moveToTitleWidth = node =>
     node.attr('transform', `translate(${this.getTitleWidth()})`)
 
+  getToolTipLeftOffset = node => {
+    const tooltipWidth = node.node().clientWidth
+    const containerWidth = this.container.node().clientWidth
+    return d3.event.pageX - this.TOOLTIP_PADDING + tooltipWidth < containerWidth
+      ? d3.event.pageX - this.TOOLTIP_PADDING
+      : containerWidth - tooltipWidth
+  }
+
   DEFAULT_EVENT_TITLE_WIDTH = 100
   EVENT_RECT_HEIGHT = 20
   TIMELINE_HEIGHT = this.EVENT_RECT_HEIGHT
@@ -128,6 +136,7 @@ class GanttChart {
   getScheduleClipUrl = () => {}
   scheduleRect
   lineAxisGroup
+  getTimeLegendGroupTicks = () => {}
 
   init = () => {
     this.container = d3.select(`#${this.containerId}`)
@@ -140,6 +149,8 @@ class GanttChart {
       .attr('transform', `translate(0,${this.TIMELINE_HEIGHT})`)
       .append('g')
       .attr('id', 'timeLegendGroup')
+
+    this.getTimeLegendGroupTicks = () => d3.selectAll('#timeLegendGroup g.tick')
 
     this.dateTooltip = this.container
       .append('div')
@@ -366,16 +377,9 @@ class GanttChart {
   }
 
   makeScheduleTooltipVisible = () => {
-    const tooltipWidth = this.scheduleRectTooltip.node().clientWidth
-    const containerWidth = this.container.node().clientWidth
-    const leftOffset =
-      d3.event.pageX - this.TOOLTIP_PADDING + tooltipWidth < containerWidth
-        ? d3.event.pageX - this.TOOLTIP_PADDING
-        : containerWidth - tooltipWidth
-
     this.scheduleRectTooltip
       .style('top', `${d3.event.pageY + this.TOOLTIP_PADDING}px`)
-      .style('left', `${leftOffset}px`)
+      .style('left', `${this.getToolTipLeftOffset(this.scheduleRectTooltip)}px`)
       .style('opacity', 1)
   }
 
@@ -442,7 +446,6 @@ class GanttChart {
   // Refactor
   drawAxes = xScale => {
     const maxHeight = 15 //temps
-    console.log(this.lineAxisGroup)
     this.lineAxisGroup.call(
       d3
         .axisBottom(xScale)
@@ -456,18 +459,21 @@ class GanttChart {
         .tickSize(this.TIMELINE_TICK_SIZE)
         .tickFormat(x => getTicksFormat(xScale, x))
     )
+    this.addDateTooltipOnLegendHover()
+  }
 
-    d3.selectAll('#time g.tick')
+  addDateTooltipOnLegendHover = () => {
+    this.getTimeLegendGroupTicks()
       .append('circle')
       .attr('fill', 'transparent')
-      .attr('r', 15)
+      .attr('r', this.TOOLTIP_PADDING)
       .attr('y', -this.TIMELINE_HEIGHT)
-      .on('mouseout', () => d3.select('#dateTooltip').style('opacity', 0))
+      .on('mouseout', () => this.dateTooltip.style('opacity', 0))
       .on('mouseover', d => {
-        d3.select('#dateTooltip')
+        this.dateTooltip
           .text(fullDateTimeFormat(d))
-          .style('top', `${d3.event.pageY + 15}px`)
-          .style('left', `${d3.event.pageX - 15}px`)
+          .style('top', `${d3.event.pageY + this.TOOLTIP_PADDING}px`)
+          .style('left', `${this.getToolTipLeftOffset(this.dateTooltip)}px`)
           .style('opacity', 1)
       })
   }
