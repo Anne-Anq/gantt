@@ -238,10 +238,7 @@ class GanttChart {
   }
 
   addEventTitleSection = () => {
-    this.eventTitleSection = this.singleLineGroup
-      .append('g')
-      .attr('x', 0) // remove ?
-      .attr('y', 0) // remove ?
+    this.eventTitleSection = this.singleLineGroup.append('g')
 
     const eventTitleClip = this.eventTitleSection
       .append('defs')
@@ -273,24 +270,17 @@ class GanttChart {
       .append('defs')
       .append('linearGradient')
       .attr('id', 'handleGradient')
-      .attr('x1', '0%')
-      .attr('x2', '100%')
-    gradient
-      .append('stop')
-      .attr('offset', '0%')
-      .attr('style', 'stop-color:rgb(2,0,36);stop-opacity:1')
-    gradient
-      .append('stop')
-      .attr('offset', '25%')
-      .attr('style', 'stop-color:rgb(76,76,128);stop-opacity:1')
-    gradient
-      .append('stop')
-      .attr('offset', '75%')
-      .attr('style', 'stop-color:rgb(156,200,209);stop-opacity:1')
-    gradient
-      .append('stop')
-      .attr('offset', '100%')
-      .attr('style', 'stop-color:rgb(76,76,128);stop-opacity:1')
+
+    const addGradientStop = (offset, style) => {
+      gradient
+        .append('stop')
+        .attr('offset', `${offset}%`)
+        .attr('style', style)
+    }
+    addGradientStop(0, 'stop-color:rgb(2,0,36);stop-opacity:1')
+    addGradientStop(25, 'stop-color:rgb(76,76,128);stop-opacity:1')
+    addGradientStop(75, 'stop-color:rgb(156,200,209);stop-opacity:1')
+    addGradientStop(100, 'stop-color:rgb(76,76,128);stop-opacity:1')
 
     this.getHandleGradient = () => 'url(#handleGradient)'
   }
@@ -301,13 +291,12 @@ class GanttChart {
       .append('rect')
       .attr('width', this.HANDLE_WIDTH)
       .attr('height', this.LINE_HEIGHT)
-      .attr('y', 0) // remove?
       .attr('fill', this.getHandleGradient())
       .call(d3.drag().on('drag', this.handleEvent('drag')))
   }
 
   addScheduleSection = () => {
-    this.scheduleSection = this.singleLineGroup.append('g').attr('y', 0) // remove ?
+    this.scheduleSection = this.singleLineGroup.append('g')
     const scheduleClip = this.scheduleSection
       .append('defs')
       .append('clipPath')
@@ -447,11 +436,7 @@ class GanttChart {
       .attr('width', event => XScale(event.endTime) - XScale(event.startTime))
   }
 
-  redraw = () => {
-    this.drawAxes()
-    this.drawScheduleRect()
-
-    // move handle
+  moveHandle = () => {
     this.dragHandle.attr('x', this.getHandleX())
     this.eventTitleClipRect.attr('width', this.getHandleX())
     this.scheduleClipRect.attr('width', this.getScheduleSectionWidth())
@@ -460,63 +445,12 @@ class GanttChart {
     this.moveToTitleWidth(this.lineAxisGroup)
     this.moveToTitleWidth(this.timeLegendGroup)
   }
+
+  redraw = () => {
+    this.drawAxes()
+    this.drawScheduleRect()
+    this.moveHandle()
+  }
 }
 
 export { GanttChart }
-
-// for reference
-
-//  <div id="container">                  //createMainDivs
-//   <div id="timelineDiv">               //createMainDivs
-//     <svg >                             //createMainDivs
-//       <g>                              //createMainDivs
-//         <g id="timeLegendGroup" />     //createMainDivs
-//       </g>                             //createMainDivs
-//     </svg>                             //createMainDivs
-//   </div>                               //createMainDivs
-//   <div id="dateTooltip"/>              //createMainDivs
-//   <div id="scheduleRectTooltip" />     //createMainDivs
-//   <div id="main">                      //createMainDivs
-//      <div class="searchValueDiv">         //createSearchValueDivs
-//        <div class="searchValueTitleDiv">     //addSearchValueTitleDiv
-//          <button class="collapseBtn">        //addSearchValueTitleDiv
-//            <i id=`${value.searchValue}BtnI`/>    //addSearchValueTitleDiv
-//          </button>                           //addSearchValueTitleDiv
-//          <div>                               //addSearchValueTitleDiv
-//        </div>                                //addSearchValueTitleDiv
-//        <div id=`${value.searchValue}eventsSvgDiv`//addEventsSvg
-//          <svg class="eventsSvg">             //addEventsSvg
-//            <g>                                 //addSingleEventGroup
-//              <rect/>                           //addEventLineBackground
-//              <g>                               //addEventTitleSection
-//                <defs>                          //addEventTitleSection
-//                  <clipPath id=`url(#eventTitleClip_${event.id})`>
-//                    <rect/>                     //addEventTitleSection
-//                  </clipPath>                   //addEventTitleSection
-//                </defs>                         //addEventTitleSection
-//                <g clipPath=`url(#eventTitleClip_${event.id})`>
-//                  <text/>                       //addTitleText
-//                </g>                            //addTitleText
-//              </g>                              //addEventTitleSection
-//              <rect/>                           //addDragHandle
-//              <g>                               //addScheduleSection
-//                <defs>                          //addScheduleSection
-//                  <clipPath id=`url(#scheduleClip_${event.id})`>
-//                    <rect/>                     //addScheduleSection
-//                  </clipPath>                   //addScheduleSection
-//                </defs>                         //addScheduleSection
-//                <g clipPath=`url(#scheduleClip_${event.id})`>
-//                  <rect/>                       //addScheduleRect
-//                </g>                            //addScheduleRect
-//              </g>                              //addScheduleSection
-//            </g>                                //addSingleEventGroup
-//           +<g>                                 //addSingleEventGroup
-//            <g>                                 //addLineAxisGroup
-//              <g/>                              //addLineAxisGroup
-//            </g>                                //addLineAxisGroup
-//          </svg>                              //addEventsSvg
-//        </div>                                //addEventsSvg
-//      </div>                               //createSearchValueDivs
-//    +<div class="searchvalueDiv" />       //createSearchValueDivs
-//   </div>                               //createMainDivs
-// </div>                                 //createMainDivs
