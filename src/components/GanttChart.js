@@ -1,7 +1,7 @@
 import * as d3 from 'd3'
 import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
 import { ScaleManager } from './ScaleManager'
-
+import tinycolor from 'tinycolor2'
 class GanttChart {
   constructor(containerId) {
     this.values = []
@@ -104,19 +104,19 @@ class GanttChart {
 
   selectEvent = eventId => {
     this.setSelectedEvents([...this.getSelectedEvents(), eventId])
-    this.formatSelectedRect()
+    this.formatSelectedEvents()
   }
 
   unselectEvent = eventId => {
     this.setSelectedEvents(
       this.getSelectedEvents().filter(id => id !== eventId)
     )
-    this.formatSelectedRect()
+    this.formatSelectedEvents()
   }
 
   unselectAllEvents = () => {
     this.setSelectedEvents([])
-    this.formatSelectedRect()
+    this.formatSelectedEvents()
   }
 
   DEFAULT_EVENT_TITLE_WIDTH = 100
@@ -147,6 +147,7 @@ class GanttChart {
   singleLineGroup
   eventLineBackground
   eventTitleSection
+  eventTitleText
   getEventTitleClipUrl = () => {}
   eventTitleClipRect
   dragHandle
@@ -310,7 +311,7 @@ class GanttChart {
   }
 
   addTitleText = () => {
-    this.eventTitleSection
+    this.eventTitleText = this.eventTitleSection
       .append('g')
       .attr('clip-path', event => this.getEventTitleClipUrl(event))
       .append('text')
@@ -398,15 +399,29 @@ class GanttChart {
       .on('click', this.handleEvent('clickRect'))
   }
 
-  formatSelectedRect = () => {
+  formatSelectedEvents = () => {
     this.scheduleRect
       .filter(({ id }) => this.getSelectedEvents().includes(id))
-      .attr('stroke', 'black')
-      .attr('stroke-width', 3)
+      .attr('fill', event =>
+        tinycolor(event.style.bg)
+          .lighten(20)
+          .toString()
+      )
+      .attr('stroke', 'grey')
+      .attr('stroke-width', 2)
+
+    this.eventTitleText
+      .filter(({ id }) => this.getSelectedEvents().includes(id))
+      .style('font-weight', 'bold')
 
     this.scheduleRect
       .filter(({ id }) => !this.getSelectedEvents().includes(id))
       .attr('stroke-width', 0)
+      .attr('fill', event => event.style.bg)
+
+    this.eventTitleText
+      .filter(({ id }) => !this.getSelectedEvents().includes(id))
+      .style('font-weight', 'normal')
   }
 
   addDataToScheduleTooltip = event => {
