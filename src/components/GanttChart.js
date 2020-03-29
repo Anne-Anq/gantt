@@ -9,6 +9,8 @@ class GanttChart {
     this.titleWidth = this.DEFAULT_EVENT_TITLE_WIDTH
     this.isInitiated = false
     this.scale = new ScaleManager()
+    this.selectedEvents = []
+    this.isCtrlKeyDown = false
   }
 
   setValues = values => (this.values = values)
@@ -22,6 +24,14 @@ class GanttChart {
   setIsInitiated = isInitiated => (this.isInitiated = isInitiated)
 
   getIsInitiated = () => this.isInitiated
+
+  setSelectedEvents = selectedEvents => (this.selectedEvents = selectedEvents)
+
+  getSelectedEvents = () => this.selectedEvents
+
+  setIsCtrlKeyDown = isCtrlKeyDown => (this.isCtrlKeyDown = isCtrlKeyDown)
+
+  getIsCtrlKeyDown = () => this.isCtrlKeyDown
 
   getTotalEventsSvgDivHeight = eventNumber => eventNumber * this.LINE_HEIGHT
 
@@ -59,9 +69,54 @@ class GanttChart {
         this.setTitleWidth(this.getTitleWidth() + d3.event.dx)
         this.scale.resize(this.getScheduleRange())
         this.redraw()
+      },
+      click: () => {
+        this.unselectAllEvents()
+      },
+      clickRect: event => {
+        d3.event.stopPropagation()
+        if (this.getIsCtrlKeyDown()) {
+          if (this.getSelectedEvents().includes(event.id)) {
+            this.unselectEvent(event.id)
+          } else {
+            this.selectEvent(event.id)
+          }
+        }
+      },
+      keydown: () => {
+        if (d3.event.key === 'Escape') {
+          this.unselectAllEvents()
+        }
+        if (d3.event.key === 'Control') {
+          this.scheduleRect.style('cursor', 'pointer')
+          this.setIsCtrlKeyDown(true)
+        }
+      },
+      keyup: () => {
+        if (d3.event.key === 'Control') {
+          this.scheduleRect.style('cursor', 'default')
+          this.setIsCtrlKeyDown(false)
+        }
       }
     }
     return eventActionMap[event]
+  }
+
+  selectEvent = eventId => {
+    this.setSelectedEvents([...this.getSelectedEvents(), eventId])
+    this.formatSelectedRect()
+  }
+
+  unselectEvent = eventId => {
+    this.setSelectedEvents(
+      this.getSelectedEvents().filter(id => id !== eventId)
+    )
+    this.formatSelectedRect()
+  }
+
+  unselectAllEvents = () => {
+    this.setSelectedEvents([])
+    this.formatSelectedRect()
   }
 
   DEFAULT_EVENT_TITLE_WIDTH = 100
@@ -327,7 +382,7 @@ class GanttChart {
       .attr('height', this.EVENT_RECT_HEIGHT)
       .attr('fill', event => event.style.bg)
       .attr('rx', 5)
-      .style('cursor', 'pointer')
+      .style('cursor', 'default')
 
     this.scheduleRect
       .on('mouseout', () => {
@@ -340,6 +395,18 @@ class GanttChart {
         this.addDataToScheduleTooltip(event)
         this.makeScheduleTooltipVisible()
       })
+      .on('click', this.handleEvent('clickRect'))
+  }
+
+  formatSelectedRect = () => {
+    this.scheduleRect
+      .filter(({ id }) => this.getSelectedEvents().includes(id))
+      .attr('stroke', 'black')
+      .attr('stroke-width', 3)
+
+    this.scheduleRect
+      .filter(({ id }) => !this.getSelectedEvents().includes(id))
+      .attr('stroke-width', 0)
   }
 
   addDataToScheduleTooltip = event => {
@@ -378,6 +445,9 @@ class GanttChart {
 
   addListeners = () => {
     window.addEventListener('resize', this.handleEvent('resize'))
+    window.addEventListener('click', this.handleEvent('click'))
+    d3.select('body').on('keydown', this.handleEvent('keydown'))
+    d3.select('body').on('keyup', this.handleEvent('keyup'))
     this.scheduleSection.call(
       d3
         .zoom()
