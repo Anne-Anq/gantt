@@ -1,24 +1,11 @@
 import * as d3 from 'd3'
 import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
-import { startOfDay, endOfDay } from 'date-fns'
+import { ScaleManager } from './ScaleManager'
 
-class ScaleManager {
-  constructor() {
-    this.today = new Date()
-    this.x = d3
-      .scaleTime()
-      .domain([startOfDay(this.today), endOfDay(this.today)])
-  }
-
-  getX = () => this.x
-
-  setRange = newRange => (this.x = this.x.range(newRange))
-}
 class GanttChart {
   constructor(containerId) {
     this.values = []
     this.containerId = containerId
-    this.transformEvent = undefined
     this.titleWidth = this.DEFAULT_EVENT_TITLE_WIDTH
     this.isInitiated = false
     this.scale = new ScaleManager()
@@ -27,10 +14,6 @@ class GanttChart {
   setValues = values => (this.values = values)
 
   getValues = () => this.values
-
-  setTransformEvent = transformEvent => (this.transformEvent = transformEvent)
-
-  getTransformEvent = () => this.transformEvent
 
   setTitleWidth = titleWidth => (this.titleWidth = titleWidth)
 
@@ -55,11 +38,12 @@ class GanttChart {
       : containerWidth - tooltipWidth
   }
 
-  resetRange = () =>
-    this.scale.setRange([
-      0,
-      this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
-    ])
+  getScheduleRange = () => [
+    0,
+    this.eventLineBackground.node()
+      ? this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
+      : 0
+  ]
 
   DEFAULT_EVENT_TITLE_WIDTH = 100
   EVENT_RECT_HEIGHT = 20
@@ -272,7 +256,7 @@ class GanttChart {
       .call(
         d3.drag().on('drag', () => {
           this.setTitleWidth(this.getTitleWidth() + d3.event.dx)
-          this.resetRange()
+          this.scale.resize(this.getScheduleRange())
           this.redraw()
         })
       )
@@ -354,7 +338,7 @@ class GanttChart {
 
   addListeners = () => {
     window.addEventListener('resize', () => {
-      this.resetRange()
+      this.scale.resize(this.getScheduleRange())
       this.redraw()
     })
     this.eventsSvg.call(
@@ -362,7 +346,7 @@ class GanttChart {
         .zoom()
         .scaleExtent([0.006, 6])
         .on('zoom', () => {
-          this.setTransformEvent(d3.event.transform)
+          this.scale.zoom(d3.event.transform)
           this.redraw()
         })
     )
@@ -375,25 +359,25 @@ class GanttChart {
     this.toggleShowMainDivs()
     this.createSearchValueDivs()
     this.addListeners()
-    this.resetRange()
+    this.scale.resize(this.getScheduleRange())
     this.redraw()
   }
 
-  // Refactor
-  drawAxes = xScale => {
+  drawAxes = () => {
     const maxHeight = 15 //temps
+    const XScale = this.scale.get()
     this.lineAxisGroup.call(
       d3
-        .axisBottom(xScale)
-        .ticks(getTicksSpacing(xScale))
+        .axisBottom(XScale)
+        .ticks(getTicksSpacing(XScale))
         .tickSize(-maxHeight)
     )
     this.timeLegendGroup.call(
       d3
-        .axisTop(xScale)
-        .ticks(getTicksSpacing(xScale))
+        .axisTop(XScale)
+        .ticks(getTicksSpacing(XScale))
         .tickSize(this.TIMELINE_TICK_SIZE)
-        .tickFormat(x => getTicksFormat(xScale, x))
+        .tickFormat(x => getTicksFormat(XScale, x))
     )
     this.addDateTooltipOnLegendHover()
   }
@@ -414,19 +398,16 @@ class GanttChart {
       })
   }
 
-  drawScheduleRect = xScale => {
+  drawScheduleRect = () => {
+    const XScale = this.scale.get()
     this.scheduleRect
-      .attr('x', event => xScale(event.startTime))
-      .attr('width', event => xScale(event.endTime) - xScale(event.startTime))
+      .attr('x', event => XScale(event.startTime))
+      .attr('width', event => XScale(event.endTime) - XScale(event.startTime))
   }
 
   redraw = () => {
-    const xScale = this.getTransformEvent()
-      ? this.getTransformEvent().rescaleX(this.scale.getX())
-      : this.scale.getX()
-
-    this.drawAxes(xScale)
-    this.drawScheduleRect(xScale)
+    this.drawAxes()
+    this.drawScheduleRect()
 
     // move handle
     this.dragHandle.attr('x', this.getHandleX())
