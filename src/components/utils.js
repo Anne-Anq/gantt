@@ -1,6 +1,33 @@
 import * as d3 from 'd3'
+import { addHours } from 'date-fns'
 
-export const gaugeToFormatMap = x => [
+export const getTicksSpacing = xScale => {
+  const gauge = getTimeScaleGauge(xScale)
+  let ticksSpacing
+
+  for (const { maxGauge, unit, spacing } of gaugeToSpacingMap) {
+    if (gauge < maxGauge) {
+      return (ticksSpacing =
+        unit === 'hour'
+          ? d3.timeHour.every(spacing)
+          : d3.timeMinute.every(spacing))
+    }
+  }
+  return ticksSpacing
+}
+
+export const getTicksFormat = (xScale, x) => {
+  const gauge = getTimeScaleGauge(xScale)
+  let ticksFormat
+  for (const { maxGauge, format } of gaugeToFormatMap(x)) {
+    if (gauge < maxGauge) {
+      return (ticksFormat = format)
+    }
+  }
+  return ticksFormat
+}
+
+const gaugeToFormatMap = x => [
   {
     maxGauge: 2.5,
     format: isEveryOtherDay(x) && isAtNoon(x) ? dateFormat(x) : ''
@@ -13,7 +40,7 @@ export const gaugeToFormatMap = x => [
   { maxGauge: Infinity, format: HourMinuteFormat(x) }
 ]
 
-export const gaugeToSpacingMap = [
+const gaugeToSpacingMap = [
   { maxGauge: 4, unit: 'hour', spacing: 12 },
   { maxGauge: 20, unit: 'hour', spacing: 6 },
   { maxGauge: 30, unit: 'hour', spacing: 2 },
@@ -25,6 +52,12 @@ export const gaugeToSpacingMap = [
 
 export const fullDateTimeFormat = x =>
   d3.timeFormat(`%a %B %d${dateSuffix(x)} %Y at %H:%M`)(x)
+
+const getTimeScaleGauge = xScale => {
+  const date1 = new Date()
+  const date2 = addHours(date1, 1)
+  return xScale(date2) - xScale(date1)
+}
 
 const isEveryXHours = (timestamp, hoursSeparation) =>
   Number(d3.timeFormat('%H')(timestamp)) % hoursSeparation === 0

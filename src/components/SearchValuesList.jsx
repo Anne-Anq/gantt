@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { min, max, addHours } from 'date-fns'
+import { min, max } from 'date-fns'
 import {
-  gaugeToSpacingMap,
-  fullDateTimeFormat,
-  gaugeToFormatMap
+  // gaugeToSpacingMap,
+  fullDateTimeFormat
+  // gaugeToFormatMap
 } from './utils'
 import * as d3 from 'd3'
 import { GanttChart } from './GanttChart'
@@ -51,51 +51,51 @@ const redrawScheduleRect = xScale => {
     .attr('width', event => xScale(event.endTime) - xScale(event.startTime))
 }
 
-const getTimeScaleGauge = xScale => {
-  const date1 = new Date()
-  const date2 = addHours(date1, 1)
-  return xScale(date2) - xScale(date1)
-}
+// const getTimeScaleGauge = xScale => {
+//   const date1 = new Date()
+//   const date2 = addHours(date1, 1)
+//   return xScale(date2) - xScale(date1)
+// }
 
-const getTicksSpacing = xScale => {
-  const gauge = getTimeScaleGauge(xScale)
-  let ticksSpacing
+// const getTicksSpacing = xScale => {
+//   const gauge = getTimeScaleGauge(xScale)
+//   let ticksSpacing
 
-  for (const { maxGauge, unit, spacing } of gaugeToSpacingMap) {
-    if (gauge < maxGauge) {
-      return (ticksSpacing =
-        unit === 'hour'
-          ? d3.timeHour.every(spacing)
-          : d3.timeMinute.every(spacing))
-    }
-  }
-  return ticksSpacing
-}
+//   for (const { maxGauge, unit, spacing } of gaugeToSpacingMap) {
+//     if (gauge < maxGauge) {
+//       return (ticksSpacing =
+//         unit === 'hour'
+//           ? d3.timeHour.every(spacing)
+//           : d3.timeMinute.every(spacing))
+//     }
+//   }
+//   return ticksSpacing
+// }
 
-const getTicksFormat = (xScale, x) => {
-  const gauge = getTimeScaleGauge(xScale)
-  let ticksFormat
-  for (const { maxGauge, format } of gaugeToFormatMap(x)) {
-    if (gauge < maxGauge) {
-      return (ticksFormat = format)
-    }
-  }
-  return ticksFormat
-}
+// const getTicksFormat = (xScale, x) => {
+//   const gauge = getTimeScaleGauge(xScale)
+//   let ticksFormat
+//   for (const { maxGauge, format } of gaugeToFormatMap(x)) {
+//     if (gauge < maxGauge) {
+//       return (ticksFormat = format)
+//     }
+//   }
+//   return ticksFormat
+// }
 
-const getXAxis = (xScale, maxHeight) => {
-  return d3
-    .axisBottom(xScale)
-    .ticks(getTicksSpacing(xScale))
-    .tickSize(-maxHeight)
-}
+// const getXAxis = (xScale, maxHeight) => {
+//   return d3
+//     .axisBottom(xScale)
+//     .ticks(getTicksSpacing(xScale))
+//     .tickSize(-maxHeight)
+// }
 
-const getTimeline = xScale =>
-  d3
-    .axisTop(xScale)
-    .ticks(getTicksSpacing(xScale))
-    .tickSize(TIMELINE_TICK_SIZE)
-    .tickFormat(x => getTicksFormat(xScale, x))
+// const getTimeline = xScale =>
+//   d3
+//     .axisTop(xScale)
+//     .ticks(getTicksSpacing(xScale))
+//     .tickSize(TIMELINE_TICK_SIZE)
+//     .tickFormat(x => getTicksFormat(xScale, x))
 
 // const buildAxes = () => {
 //   d3.selectAll('.eventsSvg')
@@ -104,11 +104,10 @@ const getTimeline = xScale =>
 // }
 
 const drawAxes = (xScale, maxHeight) => {
-  const xAxis = getXAxis(xScale, maxHeight)
-  const timeline = getTimeline(xScale)
-  d3.selectAll('.line-chart-xaxis').call(xAxis)
-
-  d3.select('#time').call(timeline)
+  // const xAxis = getXAxis(xScale, maxHeight)
+  // const timeline = getTimeline(xScale)
+  // d3.selectAll('.line-chart-xaxis').call(xAxis)
+  // d3.select('#time').call(timeline)
 
   d3.selectAll('#time g.tick')
     .append('circle')

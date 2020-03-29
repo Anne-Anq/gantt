@@ -1,4 +1,6 @@
 import * as d3 from 'd3'
+import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
+import { min, max } from 'date-fns'
 
 class GanttChart {
   constructor(containerId) {
@@ -33,6 +35,11 @@ class GanttChart {
 
   getTotalEventsSvgDivHeight = eventNumber => eventNumber * this.LINE_HEIGHT
 
+  getHandleX = () => this.getTitleWidth() - this.HANDLE_WIDTH
+
+  moveToTitleWidth = node =>
+    node.attr('transform', `translate(${this.getTitleWidth()})`)
+
   DEFAULT_EVENT_TITLE_WIDTH = 100
   EVENT_RECT_HEIGHT = 20
   TIMELINE_HEIGHT = this.EVENT_RECT_HEIGHT
@@ -49,7 +56,9 @@ class GanttChart {
   //  <div id="container">                  //createMainDivs
   //   <div id="timelineDiv">               //createMainDivs
   //     <svg >                             //createMainDivs
-  //       <g id="timeLegendGroup" />       //createMainDivs
+  //       <g>                              //createMainDivs
+  //         <g id="timeLegendGroup" />     //createMainDivs
+  //       </g>                             //createMainDivs
   //     </svg>                             //createMainDivs
   //   </div>                               //createMainDivs
   //   <div id="dateTooltip"/>              //createMainDivs
@@ -89,7 +98,9 @@ class GanttChart {
   //              </g>                              //addScheduleSection
   //            </g>                                //addSingleEventGroup
   //           +<g>                                 //addSingleEventGroup
-  //            <g/>                                //addLineAxisGroup
+  //            <g>                                 //addLineAxisGroup
+  //              <g/>                              //addLineAxisGroup
+  //            </g>                                //addLineAxisGroup
   //          </svg>                              //addEventsSvg
   //        </div>                                //addEventsSvg
   //      </div>                               //createSearchValueDivs
@@ -125,6 +136,8 @@ class GanttChart {
       .append('svg')
       .attr('height', this.TIMELINE_HEIGHT)
       .attr('width', '100%')
+      .append('g')
+      .attr('transform', `translate(0,${this.TIMELINE_HEIGHT})`)
       .append('g')
       .attr('id', 'timeLegendGroup')
 
@@ -367,8 +380,14 @@ class GanttChart {
   }
 
   addLineAxisGroup = () => {
-    this.lineAxisGroup = this.eventsSvg.append('g')
+    const maxHeight = value =>
+      this.getTotalEventsSvgDivHeight(value.events.length)
+    this.lineAxisGroup = this.eventsSvg
+      .append('g')
+      .attr('transform', value => `translate(0,${maxHeight(value)})`)
+      .append('g')
   }
+
   draw = values => {
     if (!this.getIsInitiated()) {
       return this.init()
@@ -376,10 +395,81 @@ class GanttChart {
     this.setValues(values)
     this.toggleShowMainDivs()
     this.createSearchValueDivs()
+    this.redraw()
   }
 
   redraw = () => {
-    console.log('redrawing', this.getTitleWidth())
+    let xScale = this.getXScale()
+    if (d3.event && d3.event.transform) {
+      this.setTransformEvent(d3.event.transform)
+    }
+    if (this.getTransformEvent()) {
+      xScale = this.getTransformEvent().rescaleX(xScale)
+    }
+    // drawScheduleRect(xScale) //temp
+    this.drawAxes(xScale)
+
+    // move handle
+    this.dragHandle.attr('x', this.getHandleX())
+    this.eventTitleClipRect.attr('width', this.getHandleX())
+    this.moveToTitleWidth(this.scheduleSection)
+    this.moveToTitleWidth(this.lineAxisGroup)
+    this.moveToTitleWidth(this.timeLegendGroup)
+  }
+
+  // Refactor
+  getXScale = () => {
+    const eventScheduleWidth =
+      this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
+    //temp
+    const mindate = min(
+      this.getValues().flatMap(({ events }) =>
+        events.map(event => event.startTime)
+      )
+    )
+    const maxdate = max(
+      this.getValues().flatMap(({ events }) =>
+        events.map(event => event.endTime)
+      )
+    )
+    const xScale = d3
+      .scaleTime()
+      .domain([mindate, maxdate])
+      .range([0, eventScheduleWidth])
+    return xScale
+  }
+
+  // Refactor
+  drawAxes = xScale => {
+    const maxHeight = 15 //temps
+    console.log(this.lineAxisGroup)
+    this.lineAxisGroup.call(
+      d3
+        .axisBottom(xScale)
+        .ticks(getTicksSpacing(xScale))
+        .tickSize(-maxHeight)
+    )
+    this.timeLegendGroup.call(
+      d3
+        .axisTop(xScale)
+        .ticks(getTicksSpacing(xScale))
+        .tickSize(this.TIMELINE_TICK_SIZE)
+        .tickFormat(x => getTicksFormat(xScale, x))
+    )
+
+    d3.selectAll('#time g.tick')
+      .append('circle')
+      .attr('fill', 'transparent')
+      .attr('r', 15)
+      .attr('y', -this.TIMELINE_HEIGHT)
+      .on('mouseout', () => d3.select('#dateTooltip').style('opacity', 0))
+      .on('mouseover', d => {
+        d3.select('#dateTooltip')
+          .text(fullDateTimeFormat(d))
+          .style('top', `${d3.event.pageY + 15}px`)
+          .style('left', `${d3.event.pageX - 15}px`)
+          .style('opacity', 1)
+      })
   }
 }
 
