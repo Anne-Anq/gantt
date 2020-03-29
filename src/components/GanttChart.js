@@ -38,12 +38,12 @@ class GanttChart {
       : containerWidth - tooltipWidth
   }
 
-  getScheduleRange = () => [
-    0,
+  getScheduleSectionWidth = () =>
     this.eventLineBackground.node()
       ? this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
       : 0
-  ]
+
+  getScheduleRange = () => [0, this.getScheduleSectionWidth()]
 
   handleEvent = event => {
     const eventActionMap = {
@@ -96,6 +96,8 @@ class GanttChart {
   dragHandle
   scheduleSection
   getScheduleClipUrl = () => {}
+  scheduleClipRect
+  scheduleSectionBackground
   scheduleRect
   lineAxisGroup
   getTimeLegendGroupTicks = () => {}
@@ -284,10 +286,14 @@ class GanttChart {
 
     this.getScheduleClipUrl = event => `url(#scheduleClip_${event.id})`
 
-    scheduleClip
+    this.scheduleClipRect = scheduleClip
       .append('rect')
       .attr('height', this.LINE_HEIGHT)
-      .attr('width', '100%') // if this is removed clip size does not adjust
+
+    this.scheduleSectionBackground = this.scheduleSection
+      .append('rect')
+      .attr('fill', 'rgba(255, 255, 255, 0.5)')
+      .attr('height', this.LINE_HEIGHT)
 
     this.addScheduleRect()
   }
@@ -351,7 +357,7 @@ class GanttChart {
 
   addListeners = () => {
     window.addEventListener('resize', this.handleEvent('resize'))
-    this.eventsSvg.call(
+    this.scheduleSection.call(
       d3
         .zoom()
         .scaleExtent([0.006, 6])
@@ -419,6 +425,8 @@ class GanttChart {
     // move handle
     this.dragHandle.attr('x', this.getHandleX())
     this.eventTitleClipRect.attr('width', this.getHandleX())
+    this.scheduleClipRect.attr('width', this.getScheduleSectionWidth())
+    this.scheduleSectionBackground.attr('width', this.getScheduleSectionWidth())
     this.moveToTitleWidth(this.scheduleSection)
     this.moveToTitleWidth(this.lineAxisGroup)
     this.moveToTitleWidth(this.timeLegendGroup)

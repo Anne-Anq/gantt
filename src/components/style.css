@@ -43,10 +43,10 @@
   font-size: 1.2em;
 }
 .evenLine {
-  fill: white;
+  fill: rgb(244, 244, 255);
 }
 .oddLine {
-  fill: rgba(190, 208, 212, 0.33);
+  fill: rgb(208, 208, 221);
 }
 .eventTitleText {
   alignment-baseline: middle;
