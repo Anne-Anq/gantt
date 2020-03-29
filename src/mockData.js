@@ -1,13 +1,12 @@
+import { addMinutes, addHours, startOfDay } from 'date-fns'
+const today = startOfDay(new Date())
+
 export const mockData = [
   {
     id: 'event1Id',
     title: 'event1Name',
-    startTime: new Date(
-      'Sat Mar 14 2020 19:56:24 GMT-0600 (Mountain Daylight Time)'
-    ),
-    endTime: new Date(
-      'Sat Mar 14 2020 20:56:24 GMT-0600 (Mountain Daylight Time)'
-    ),
+    startTime: addMinutes(addHours(today, 6), 25),
+    endTime: addMinutes(addHours(today, 7), 15),
     lookupTags: ['Entity1name', 'jobsite2name', 'entity2name', 'Jobsite1name'],
     style: {
       text: '#f123321',
@@ -27,12 +26,8 @@ export const mockData = [
   {
     id: 'event2Id',
     title: 'event2Name',
-    startTime: new Date(
-      'Sat Mar 14 2020 19:56:24 GMT-0600 (Mountain Daylight Time)'
-    ),
-    endTime: new Date(
-      'Sat Mar 14 2020 21:56:24 GMT-0600 (Mountain Daylight Time)'
-    ),
+    startTime: addMinutes(addHours(today, 19), 36),
+    endTime: addMinutes(addHours(today, 20), 56),
     lookupTags: ['entity2name', 'Jobsite1name'],
     style: {
       text: '#f983321',
@@ -48,12 +43,8 @@ export const mockData = [
   {
     id: 'event3Id',
     title: 'event3Name',
-    startTime: new Date(
-      'Sat Mar 14 2020 20:36:24 GMT-0600 (Mountain Daylight Time)'
-    ),
-    endTime: new Date(
-      'Sat Mar 14 2020 20:56:24 GMT-0600 (Mountain Daylight Time)'
-    ),
+    startTime: addMinutes(addHours(today, 20), 36),
+    endTime: addMinutes(addHours(today, 20), 56),
     lookupTags: ['entity2name', 'jobsite2name'],
     style: {
       text: '#f933321',
