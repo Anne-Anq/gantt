@@ -88,6 +88,7 @@ class GanttChart {
   getSearchValueBtnI = () => {}
   getEventsSvgDiv = () => {}
   eventsSvg
+  getHandleGradient = () => {}
   singleLineGroup
   eventLineBackground
   eventTitleSection
@@ -267,13 +268,41 @@ class GanttChart {
       .attr('x', this.PADDING_LEFT_TEXT)
   }
 
+  addHandleGradientDef = () => {
+    const gradient = this.singleLineGroup
+      .append('defs')
+      .append('linearGradient')
+      .attr('id', 'handleGradient')
+      .attr('x1', '0%')
+      .attr('x2', '100%')
+    gradient
+      .append('stop')
+      .attr('offset', '0%')
+      .attr('style', 'stop-color:rgb(2,0,36);stop-opacity:1')
+    gradient
+      .append('stop')
+      .attr('offset', '25%')
+      .attr('style', 'stop-color:rgb(76,76,128);stop-opacity:1')
+    gradient
+      .append('stop')
+      .attr('offset', '75%')
+      .attr('style', 'stop-color:rgb(156,200,209);stop-opacity:1')
+    gradient
+      .append('stop')
+      .attr('offset', '100%')
+      .attr('style', 'stop-color:rgb(76,76,128);stop-opacity:1')
+
+    this.getHandleGradient = () => 'url(#handleGradient)'
+  }
+
   addDragHandle = () => {
+    this.addHandleGradientDef()
     this.dragHandle = this.singleLineGroup
       .append('rect')
       .attr('width', this.HANDLE_WIDTH)
       .attr('height', this.LINE_HEIGHT)
       .attr('y', 0) // remove?
-      .attr('fill', 'purple') // temp
+      .attr('fill', this.getHandleGradient())
       .call(d3.drag().on('drag', this.handleEvent('drag')))
   }
 
