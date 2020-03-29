@@ -2,8 +2,9 @@ import * as d3 from 'd3'
 import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
 import { ScaleManager } from './ScaleManager'
 import tinycolor from 'tinycolor2'
+import { differenceInMinutes, addMinutes } from 'date-fns'
 class GanttChart {
-  constructor(containerId) {
+  constructor({ containerId, onMoveEvents }) {
     this.values = []
     this.containerId = containerId
     this.titleWidth = this.DEFAULT_EVENT_TITLE_WIDTH
@@ -11,6 +12,8 @@ class GanttChart {
     this.scale = new ScaleManager()
     this.selectedEvents = []
     this.isCtrlKeyDown = false
+    this.onMoveEvents = onMoveEvents
+    this.modifiedEvents = undefined
   }
 
   setValues = values => (this.values = values)
@@ -32,6 +35,10 @@ class GanttChart {
   setIsCtrlKeyDown = isCtrlKeyDown => (this.isCtrlKeyDown = isCtrlKeyDown)
 
   getIsCtrlKeyDown = () => this.isCtrlKeyDown
+
+  setModifiedEvents = modifiedEvents => (this.modifiedEvents = modifiedEvents)
+
+  getModifiedEvents = () => this.modifiedEvents
 
   getTotalEventsSvgDivHeight = eventNumber => eventNumber * this.LINE_HEIGHT
 
@@ -84,8 +91,14 @@ class GanttChart {
         }
       },
       dragRect: () => {
-        if (this.isEventSelected(d3.event.subject.id)) {
+        if (
+          d3.event.type === 'drag' &&
+          this.isEventSelected(d3.event.subject.id)
+        ) {
           this.moveEvents(d3.event.subject, d3.event.x)
+        } else if (d3.event.type === 'end') {
+          this.onMoveEvents(this.getModifiedEvents())
+          this.setModifiedEvents()
         }
       },
       keydown: () => {
@@ -405,7 +418,7 @@ class GanttChart {
         this.makeScheduleTooltipVisible()
       })
       .on('click', this.handleEvent('clickRect'))
-      .call(d3.drag().on('drag', this.handleEvent('dragRect')))
+      .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
   }
 
   formatSelectedEvents = () => {
@@ -539,13 +552,19 @@ class GanttChart {
 
   moveEvents = (targetEvent, xCoord) => {
     const XScale = this.scale.get()
+    const modifiedEvents = {}
     this.scheduleRect
       .filter(({ id }) => this.isEventSelected(id))
-      .attr(
-        'x',
-        event =>
+      .attr('x', event => {
+        const newX =
           xCoord + XScale(event.startTime) - XScale(targetEvent.startTime)
-      )
+        const duration = differenceInMinutes(event.endTime, event.startTime)
+        const startTime = XScale.invert(newX)
+        const endTime = addMinutes(startTime, duration)
+        modifiedEvents[event.id] = { startTime, endTime }
+        return newX
+      })
+    this.setModifiedEvents({ ...this.getModifiedEvents(), ...modifiedEvents })
   }
 
   moveHandle = () => {
