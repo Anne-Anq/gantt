@@ -402,27 +402,8 @@ class GanttChart {
     this.redraw()
   }
 
-  redraw = () => {
-    let xScale = this.getXScale()
-    if (d3.event && d3.event.transform) {
-      this.setTransformEvent(d3.event.transform)
-    }
-    if (this.getTransformEvent()) {
-      xScale = this.getTransformEvent().rescaleX(xScale)
-    }
-    // drawScheduleRect(xScale) //temp
-    this.drawAxes(xScale)
-
-    // move handle
-    this.dragHandle.attr('x', this.getHandleX())
-    this.eventTitleClipRect.attr('width', this.getHandleX())
-    this.moveToTitleWidth(this.scheduleSection)
-    this.moveToTitleWidth(this.lineAxisGroup)
-    this.moveToTitleWidth(this.timeLegendGroup)
-  }
-
   // Refactor
-  getXScale = () => {
+  getDefaultXScale = () => {
     const eventScheduleWidth =
       this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
     //temp
@@ -476,6 +457,32 @@ class GanttChart {
           .style('left', `${this.getToolTipLeftOffset(this.dateTooltip)}px`)
           .style('opacity', 1)
       })
+  }
+
+  drawScheduleRect = xScale => {
+    this.scheduleRect
+      .attr('x', event => xScale(event.startTime))
+      .attr('width', event => xScale(event.endTime) - xScale(event.startTime))
+  }
+
+  redraw = () => {
+    let xScale = this.getDefaultXScale()
+    if (d3.event && d3.event.transform) {
+      this.setTransformEvent(d3.event.transform)
+    }
+    if (this.getTransformEvent()) {
+      xScale = this.getTransformEvent().rescaleX(xScale)
+    }
+
+    this.drawAxes(xScale)
+    this.drawScheduleRect(xScale)
+
+    // move handle
+    this.dragHandle.attr('x', this.getHandleX())
+    this.eventTitleClipRect.attr('width', this.getHandleX())
+    this.moveToTitleWidth(this.scheduleSection)
+    this.moveToTitleWidth(this.lineAxisGroup)
+    this.moveToTitleWidth(this.timeLegendGroup)
   }
 }
 
