@@ -344,7 +344,10 @@ class GanttChart {
       d3
         .zoom()
         .scaleExtent([0.006, 6])
-        .on('zoom', () => this.redraw())
+        .on('zoom', () => {
+          this.setTransformEvent(d3.event.transform)
+          this.redraw()
+        })
     )
   }
   draw = values => {
@@ -358,34 +361,25 @@ class GanttChart {
     this.redraw()
   }
 
-  // Refactor
-  getXScale = () => {
-    const eventScheduleWidth =
-      this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
-    //temp
-    const mindate = min(
-      this.getValues().flatMap(({ events }) =>
-        events.map(event => event.startTime)
-      )
-    )
-    const maxdate = max(
-      this.getValues().flatMap(({ events }) =>
-        events.map(event => event.endTime)
-      )
-    )
-    let xScale = d3
+  defineInitialScale = () =>
+    d3
       .scaleTime()
-      .domain([mindate, maxdate])
-      .range([0, eventScheduleWidth])
-
-    if (d3.event && d3.event.transform) {
-      this.setTransformEvent(d3.event.transform)
-    }
-    if (this.getTransformEvent()) {
-      xScale = this.getTransformEvent().rescaleX(xScale)
-    }
-    return xScale
-  }
+      .domain([
+        min(
+          this.getValues().flatMap(({ events }) =>
+            events.map(event => event.startTime)
+          )
+        ),
+        max(
+          this.getValues().flatMap(({ events }) =>
+            events.map(event => event.endTime)
+          )
+        )
+      ])
+      .range([
+        0,
+        this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
+      ])
 
   // Refactor
   drawAxes = xScale => {
@@ -429,7 +423,10 @@ class GanttChart {
   }
 
   redraw = () => {
-    const xScale = this.getXScale()
+    const xScale = this.getTransformEvent()
+      ? this.getTransformEvent().rescaleX(this.defineInitialScale())
+      : this.defineInitialScale()
+
     this.drawAxes(xScale)
     this.drawScheduleRect(xScale)
 
