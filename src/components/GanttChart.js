@@ -45,6 +45,25 @@ class GanttChart {
       : 0
   ]
 
+  handleEvent = event => {
+    const eventActionMap = {
+      zoom: () => {
+        this.scale.zoom(d3.event.transform)
+        this.redraw()
+      },
+      resize: () => {
+        this.scale.resize(this.getScheduleRange())
+        this.redraw()
+      },
+      drag: () => {
+        this.setTitleWidth(this.getTitleWidth() + d3.event.dx)
+        this.scale.resize(this.getScheduleRange())
+        this.redraw()
+      }
+    }
+    return eventActionMap[event]
+  }
+
   DEFAULT_EVENT_TITLE_WIDTH = 100
   EVENT_RECT_HEIGHT = 20
   TIMELINE_HEIGHT = this.EVENT_RECT_HEIGHT
@@ -253,13 +272,7 @@ class GanttChart {
       .attr('height', this.LINE_HEIGHT)
       .attr('y', 0) // remove?
       .attr('fill', 'purple') // temp
-      .call(
-        d3.drag().on('drag', () => {
-          this.setTitleWidth(this.getTitleWidth() + d3.event.dx)
-          this.scale.resize(this.getScheduleRange())
-          this.redraw()
-        })
-      )
+      .call(d3.drag().on('drag', this.handleEvent('drag')))
   }
 
   addScheduleSection = () => {
@@ -337,18 +350,12 @@ class GanttChart {
   }
 
   addListeners = () => {
-    window.addEventListener('resize', () => {
-      this.scale.resize(this.getScheduleRange())
-      this.redraw()
-    })
+    window.addEventListener('resize', this.handleEvent('resize'))
     this.eventsSvg.call(
       d3
         .zoom()
         .scaleExtent([0.006, 6])
-        .on('zoom', () => {
-          this.scale.zoom(d3.event.transform)
-          this.redraw()
-        })
+        .on('zoom', this.handleEvent('zoom'))
     )
   }
   draw = values => {
