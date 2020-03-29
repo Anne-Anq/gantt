@@ -61,60 +61,6 @@ class GanttChart {
   TRANSITION_DURATION = 200
   TOOLTIP_PADDING = 15
 
-  //  <div id="container">                  //createMainDivs
-  //   <div id="timelineDiv">               //createMainDivs
-  //     <svg >                             //createMainDivs
-  //       <g>                              //createMainDivs
-  //         <g id="timeLegendGroup" />     //createMainDivs
-  //       </g>                             //createMainDivs
-  //     </svg>                             //createMainDivs
-  //   </div>                               //createMainDivs
-  //   <div id="dateTooltip"/>              //createMainDivs
-  //   <div id="scheduleRectTooltip" />     //createMainDivs
-  //   <div id="main">                      //createMainDivs
-  //      <div class="searchValueDiv">         //createSearchValueDivs
-  //        <div class="searchValueTitleDiv">     //addSearchValueTitleDiv
-  //          <button class="collapseBtn">        //addSearchValueTitleDiv
-  //            <i id=`${value.searchValue}BtnI`/>    //addSearchValueTitleDiv
-  //          </button>                           //addSearchValueTitleDiv
-  //          <div>                               //addSearchValueTitleDiv
-  //        </div>                                //addSearchValueTitleDiv
-  //        <div id=`${value.searchValue}eventsSvgDiv`//addEventsSvg
-  //          <svg class="eventsSvg">             //addEventsSvg
-  //            <g>                                 //addSingleEventGroup
-  //              <rect/>                           //addEventLineBackground
-  //              <g>                               //addEventTitleSection
-  //                <defs>                          //addEventTitleSection
-  //                  <clipPath id=`url(#eventTitleClip_${event.id})`>
-  //                    <rect/>                     //addEventTitleSection
-  //                  </clipPath>                   //addEventTitleSection
-  //                </defs>                         //addEventTitleSection
-  //                <g clipPath=`url(#eventTitleClip_${event.id})`>
-  //                  <text/>                       //addTitleText
-  //                </g>                            //addTitleText
-  //              </g>                              //addEventTitleSection
-  //              <rect/>                           //addDragHandle
-  //              <g>                               //addScheduleSection
-  //                <defs>                          //addScheduleSection
-  //                  <clipPath id=`url(#scheduleClip_${event.id})`>
-  //                    <rect/>                     //addScheduleSection
-  //                  </clipPath>                   //addScheduleSection
-  //                </defs>                         //addScheduleSection
-  //                <g clipPath=`url(#scheduleClip_${event.id})`>
-  //                  <rect/>                       //addScheduleRect
-  //                </g>                            //addScheduleRect
-  //              </g>                              //addScheduleSection
-  //            </g>                                //addSingleEventGroup
-  //           +<g>                                 //addSingleEventGroup
-  //            <g>                                 //addLineAxisGroup
-  //              <g/>                              //addLineAxisGroup
-  //            </g>                                //addLineAxisGroup
-  //          </svg>                              //addEventsSvg
-  //        </div>                                //addEventsSvg
-  //      </div>                               //createSearchValueDivs
-  //    +<div class="searchvalueDiv" />       //createSearchValueDivs
-  //   </div>                               //createMainDivs
-  // </div>                                 //createMainDivs
   container
   timeLineDiv
   timeLegendGroup
@@ -392,6 +338,15 @@ class GanttChart {
       .append('g')
   }
 
+  addListeners = () => {
+    window.addEventListener('resize', () => this.redraw())
+    this.eventsSvg.call(
+      d3
+        .zoom()
+        .scaleExtent([0.006, 6])
+        .on('zoom', () => this.redraw())
+    )
+  }
   draw = values => {
     if (!this.getIsInitiated()) {
       return this.init()
@@ -399,11 +354,12 @@ class GanttChart {
     this.setValues(values)
     this.toggleShowMainDivs()
     this.createSearchValueDivs()
+    this.addListeners()
     this.redraw()
   }
 
   // Refactor
-  getDefaultXScale = () => {
+  getXScale = () => {
     const eventScheduleWidth =
       this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
     //temp
@@ -417,10 +373,17 @@ class GanttChart {
         events.map(event => event.endTime)
       )
     )
-    const xScale = d3
+    let xScale = d3
       .scaleTime()
       .domain([mindate, maxdate])
       .range([0, eventScheduleWidth])
+
+    if (d3.event && d3.event.transform) {
+      this.setTransformEvent(d3.event.transform)
+    }
+    if (this.getTransformEvent()) {
+      xScale = this.getTransformEvent().rescaleX(xScale)
+    }
     return xScale
   }
 
@@ -466,14 +429,7 @@ class GanttChart {
   }
 
   redraw = () => {
-    let xScale = this.getDefaultXScale()
-    if (d3.event && d3.event.transform) {
-      this.setTransformEvent(d3.event.transform)
-    }
-    if (this.getTransformEvent()) {
-      xScale = this.getTransformEvent().rescaleX(xScale)
-    }
-
+    const xScale = this.getXScale()
     this.drawAxes(xScale)
     this.drawScheduleRect(xScale)
 
@@ -487,3 +443,60 @@ class GanttChart {
 }
 
 export { GanttChart }
+
+// for reference
+
+//  <div id="container">                  //createMainDivs
+//   <div id="timelineDiv">               //createMainDivs
+//     <svg >                             //createMainDivs
+//       <g>                              //createMainDivs
+//         <g id="timeLegendGroup" />     //createMainDivs
+//       </g>                             //createMainDivs
+//     </svg>                             //createMainDivs
+//   </div>                               //createMainDivs
+//   <div id="dateTooltip"/>              //createMainDivs
+//   <div id="scheduleRectTooltip" />     //createMainDivs
+//   <div id="main">                      //createMainDivs
+//      <div class="searchValueDiv">         //createSearchValueDivs
+//        <div class="searchValueTitleDiv">     //addSearchValueTitleDiv
+//          <button class="collapseBtn">        //addSearchValueTitleDiv
+//            <i id=`${value.searchValue}BtnI`/>    //addSearchValueTitleDiv
+//          </button>                           //addSearchValueTitleDiv
+//          <div>                               //addSearchValueTitleDiv
+//        </div>                                //addSearchValueTitleDiv
+//        <div id=`${value.searchValue}eventsSvgDiv`//addEventsSvg
+//          <svg class="eventsSvg">             //addEventsSvg
+//            <g>                                 //addSingleEventGroup
+//              <rect/>                           //addEventLineBackground
+//              <g>                               //addEventTitleSection
+//                <defs>                          //addEventTitleSection
+//                  <clipPath id=`url(#eventTitleClip_${event.id})`>
+//                    <rect/>                     //addEventTitleSection
+//                  </clipPath>                   //addEventTitleSection
+//                </defs>                         //addEventTitleSection
+//                <g clipPath=`url(#eventTitleClip_${event.id})`>
+//                  <text/>                       //addTitleText
+//                </g>                            //addTitleText
+//              </g>                              //addEventTitleSection
+//              <rect/>                           //addDragHandle
+//              <g>                               //addScheduleSection
+//                <defs>                          //addScheduleSection
+//                  <clipPath id=`url(#scheduleClip_${event.id})`>
+//                    <rect/>                     //addScheduleSection
+//                  </clipPath>                   //addScheduleSection
+//                </defs>                         //addScheduleSection
+//                <g clipPath=`url(#scheduleClip_${event.id})`>
+//                  <rect/>                       //addScheduleRect
+//                </g>                            //addScheduleRect
+//              </g>                              //addScheduleSection
+//            </g>                                //addSingleEventGroup
+//           +<g>                                 //addSingleEventGroup
+//            <g>                                 //addLineAxisGroup
+//              <g/>                              //addLineAxisGroup
+//            </g>                                //addLineAxisGroup
+//          </svg>                              //addEventsSvg
+//        </div>                                //addEventsSvg
+//      </div>                               //createSearchValueDivs
+//    +<div class="searchvalueDiv" />       //createSearchValueDivs
+//   </div>                               //createMainDivs
+// </div>                                 //createMainDivs
