@@ -395,7 +395,10 @@ class GanttChart {
   }
 
   drawAxes = () => {
-    const maxHeight = 15 //temps
+    const maxEventsNum = Math.max(
+      ...this.getValues().map(value => value.events.length)
+    )
+    const maxHeight = this.getTotalEventsSvgDivHeight(maxEventsNum)
     const XScale = this.scale.get()
     this.lineAxisGroup.call(
       d3
