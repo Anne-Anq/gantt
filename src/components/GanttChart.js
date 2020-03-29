@@ -1,7 +1,19 @@
 import * as d3 from 'd3'
 import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
-import { min, max } from 'date-fns'
+import { startOfDay, endOfDay } from 'date-fns'
 
+class ScaleManager {
+  constructor() {
+    this.today = new Date()
+    this.x = d3
+      .scaleTime()
+      .domain([startOfDay(this.today), endOfDay(this.today)])
+  }
+
+  getX = () => this.x
+
+  setRange = newRange => (this.x = this.x.range(newRange))
+}
 class GanttChart {
   constructor(containerId) {
     this.values = []
@@ -9,23 +21,18 @@ class GanttChart {
     this.transformEvent = undefined
     this.titleWidth = this.DEFAULT_EVENT_TITLE_WIDTH
     this.isInitiated = false
+    this.scale = new ScaleManager()
   }
 
-  setValues = values => {
-    this.values = values
-  }
+  setValues = values => (this.values = values)
 
   getValues = () => this.values
 
-  setTransformEvent = transformEvent => {
-    this.transformEvent = transformEvent
-  }
+  setTransformEvent = transformEvent => (this.transformEvent = transformEvent)
 
   getTransformEvent = () => this.transformEvent
 
-  setTitleWidth = titleWidth => {
-    this.titleWidth = titleWidth
-  }
+  setTitleWidth = titleWidth => (this.titleWidth = titleWidth)
 
   getTitleWidth = () => this.titleWidth
 
@@ -47,6 +54,12 @@ class GanttChart {
       ? d3.event.pageX - this.TOOLTIP_PADDING
       : containerWidth - tooltipWidth
   }
+
+  resetRange = () =>
+    this.scale.setRange([
+      0,
+      this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
+    ])
 
   DEFAULT_EVENT_TITLE_WIDTH = 100
   EVENT_RECT_HEIGHT = 20
@@ -259,6 +272,7 @@ class GanttChart {
       .call(
         d3.drag().on('drag', () => {
           this.setTitleWidth(this.getTitleWidth() + d3.event.dx)
+          this.resetRange()
           this.redraw()
         })
       )
@@ -339,7 +353,10 @@ class GanttChart {
   }
 
   addListeners = () => {
-    window.addEventListener('resize', () => this.redraw())
+    window.addEventListener('resize', () => {
+      this.resetRange()
+      this.redraw()
+    })
     this.eventsSvg.call(
       d3
         .zoom()
@@ -358,28 +375,9 @@ class GanttChart {
     this.toggleShowMainDivs()
     this.createSearchValueDivs()
     this.addListeners()
+    this.resetRange()
     this.redraw()
   }
-
-  defineInitialScale = () =>
-    d3
-      .scaleTime()
-      .domain([
-        min(
-          this.getValues().flatMap(({ events }) =>
-            events.map(event => event.startTime)
-          )
-        ),
-        max(
-          this.getValues().flatMap(({ events }) =>
-            events.map(event => event.endTime)
-          )
-        )
-      ])
-      .range([
-        0,
-        this.eventLineBackground.node().getBBox().width - this.getTitleWidth()
-      ])
 
   // Refactor
   drawAxes = xScale => {
@@ -424,8 +422,8 @@ class GanttChart {
 
   redraw = () => {
     const xScale = this.getTransformEvent()
-      ? this.getTransformEvent().rescaleX(this.defineInitialScale())
-      : this.defineInitialScale()
+      ? this.getTransformEvent().rescaleX(this.scale.getX())
+      : this.scale.getX()
 
     this.drawAxes(xScale)
     this.drawScheduleRect(xScale)
