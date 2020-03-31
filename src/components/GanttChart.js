@@ -106,13 +106,11 @@ class GanttChart {
           this.unselectAllEvents()
         }
         if (d3.event.key === 'Control') {
-          this.scheduleRect.style('cursor', 'pointer')
           this.setIsCtrlKeyDown(true)
         }
       },
       keyup: () => {
         if (d3.event.key === 'Control') {
-          this.scheduleRect.style('cursor', 'default')
           this.setIsCtrlKeyDown(false)
         }
       }
@@ -404,7 +402,7 @@ class GanttChart {
       .attr('height', this.EVENT_RECT_HEIGHT)
       .attr('fill', event => event.style.bg)
       .attr('rx', 5)
-      .style('cursor', 'default')
+      .style('cursor', 'pointer')
 
     this.scheduleRect
       .on('mouseout', () => {
