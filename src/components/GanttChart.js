@@ -64,6 +64,12 @@ class GanttChart {
 
   handleEvent = event => {
     const eventActionMap = {
+      mousedownSchedule: () => {
+        this.scheduleSectionBackground.style('cursor', 'grabbing')
+      },
+      zoomEnd: () => {
+        this.scheduleSectionBackground.style('cursor', 'grab')
+      },
       zoom: () => {
         this.scale.zoom(d3.event.transform)
         this.redraw()
@@ -106,11 +112,13 @@ class GanttChart {
           this.unselectAllEvents()
         }
         if (d3.event.key === 'Control') {
+          this.scheduleSectionBackground.style('cursor', 'all-scroll')
           this.setIsCtrlKeyDown(true)
         }
       },
       keyup: () => {
         if (d3.event.key === 'Control') {
+          this.scheduleSectionBackground.style('cursor', 'grab')
           this.setIsCtrlKeyDown(false)
         }
       }
@@ -388,7 +396,12 @@ class GanttChart {
       .append('rect')
       .attr('fill', 'rgba(255, 255, 255, 0.5)')
       .attr('height', this.LINE_HEIGHT)
-      .style('cursor', 'all-scroll')
+      .style('cursor', 'grab')
+
+    this.scheduleSectionBackground.on(
+      'mousedown',
+      this.handleEvent('mousedownSchedule')
+    )
 
     this.addScheduleRect()
   }
@@ -481,6 +494,7 @@ class GanttChart {
   addListeners = () => {
     window.addEventListener('resize', this.handleEvent('resize'))
     window.addEventListener('click', this.handleEvent('click'))
+
     d3.select('body').on('keydown', this.handleEvent('keydown'))
     d3.select('body').on('keyup', this.handleEvent('keyup'))
     this.scheduleSection.call(
@@ -488,6 +502,7 @@ class GanttChart {
         .zoom()
         .scaleExtent([0.006, 6])
         .on('zoom', this.handleEvent('zoom'))
+        .on('end', this.handleEvent('zoomEnd'))
     )
   }
   draw = values => {
