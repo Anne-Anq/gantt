@@ -33,6 +33,12 @@ class ScaleManager {
     }
     this._setRange(newRange)
   }
+
+  getTimeBoundaries = () => {
+    return this.get()
+      .range()
+      .map(xCoord => this.get().invert(xCoord))
+  }
 }
 
 export { ScaleManager }

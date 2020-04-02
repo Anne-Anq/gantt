@@ -4,7 +4,7 @@ import { ScaleManager } from './ScaleManager'
 import tinycolor from 'tinycolor2'
 import { differenceInMinutes, addMinutes } from 'date-fns'
 class GanttChart {
-  constructor({ containerId, onMoveEvents }) {
+  constructor({ containerId, onMoveEvents, onBoundariesChange }) {
     this.values = []
     this.containerId = containerId
     this.titleWidth = this.DEFAULT_EVENT_TITLE_WIDTH
@@ -14,6 +14,7 @@ class GanttChart {
     this.isCtrlKeyDown = false
     this.onMoveEvents = onMoveEvents
     this.modifiedEvents = undefined
+    this.onBoundariesChange = onBoundariesChange
   }
 
   setValues = values => (this.values = values)
@@ -69,6 +70,7 @@ class GanttChart {
       },
       zoomEnd: () => {
         this.scheduleSectionBackground.style('cursor', 'grab')
+        this.onBoundariesChange(this.scale.getTimeBoundaries())
       },
       zoom: () => {
         this.scale.zoom(d3.event.transform)
