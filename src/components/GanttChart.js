@@ -88,11 +88,20 @@ class GanttChart {
       },
       clickRect: event => {
         d3.event.stopPropagation()
-        if (this.getIsCtrlKeyDown()) {
+        if (!this.getIsCtrlKeyDown()) {
+          if (
+            this.isEventSelected(event.id) &&
+            this.getSelectedEvents().length === 1
+          ) {
+            this.unselectEvent(event)
+          } else {
+            this.selectOnlyEvent(event)
+          }
+        } else {
           if (this.isEventSelected(event.id)) {
             this.unselectEvent(event)
           } else {
-            this.selectEvent(event)
+            this.selectAdditionalEvent(event)
           }
         }
       },
@@ -129,8 +138,13 @@ class GanttChart {
   isEventSelected = eventId =>
     !!this.getSelectedEvents().find(({ id }) => id === eventId)
 
-  selectEvent = event => {
+  selectAdditionalEvent = event => {
     this.setSelectedEvents([...this.getSelectedEvents(), event])
+    this.formatSelectedEvents()
+  }
+
+  selectOnlyEvent = event => {
+    this.setSelectedEvents([event])
     this.formatSelectedEvents()
   }
 
