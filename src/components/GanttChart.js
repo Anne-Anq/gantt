@@ -111,7 +111,7 @@ class GanttChart {
           this.isEventSelected(d3.event.subject.id)
         ) {
           this.moveEvents(d3.event.subject, d3.event.x)
-        } else if (d3.event.type === 'end') {
+        } else if (d3.event.type === 'end' && this.getModifiedEvents()) {
           this.onMoveEvents(this.getModifiedEvents())
           this.setModifiedEvents()
         }
