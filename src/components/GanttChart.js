@@ -72,6 +72,7 @@ class GanttChart {
     const eventActionMap = {
       mousedownSchedule: () => {
         this.scheduleSectionBackground.style('cursor', 'grabbing')
+        this.unselectAllEvents()
       },
       zoomEnd: () => {
         this.setIsZooming(false)
@@ -95,7 +96,7 @@ class GanttChart {
         this.scale.resize(this.getScheduleRange())
         this.redraw()
       },
-      click: () => {
+      mousedown: () => {
         this.unselectAllEvents()
       },
       clickRect: event => {
@@ -124,6 +125,7 @@ class GanttChart {
         ) {
           this.removeScheduleTootlip()
           this.moveEvents(d3.event.subject, d3.event.x)
+          // this.container.style('cursor', 'grabbing')
         } else if (d3.event.type === 'end' && this.getModifiedEvents()) {
           this.onMoveEvents(this.getModifiedEvents())
           this.setModifiedEvents()
@@ -523,8 +525,8 @@ class GanttChart {
 
   addListeners = () => {
     window.addEventListener('resize', this.handleEvent('resize'))
-    window.addEventListener('click', this.handleEvent('click'))
 
+    d3.select('body').on('mousedown', this.handleEvent('mousedown'))
     d3.select('body').on('keydown', this.handleEvent('keydown'))
     d3.select('body').on('keyup', this.handleEvent('keyup'))
     this.scheduleSection
