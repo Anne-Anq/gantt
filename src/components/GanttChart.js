@@ -70,9 +70,12 @@ class GanttChart {
       },
       zoomEnd: () => {
         this.scheduleSectionBackground.style('cursor', 'grab')
-        this.onBoundariesChange(this.scale.getTimeBoundaries())
+        if (!d3.event.sourceEvent) {
+          this.onBoundariesChange(this.scale.getTimeBoundaries())
+        }
       },
       zoom: () => {
+        console.log('zoom')
         this.scale.zoom(d3.event.transform)
         this.redraw()
       },
@@ -513,13 +516,15 @@ class GanttChart {
 
     d3.select('body').on('keydown', this.handleEvent('keydown'))
     d3.select('body').on('keyup', this.handleEvent('keyup'))
-    this.scheduleSection.call(
-      d3
-        .zoom()
-        .scaleExtent([0.006, 6])
-        .on('zoom', this.handleEvent('zoom'))
-        .on('end', this.handleEvent('zoomEnd'))
-    )
+    this.scheduleSection
+      .call(
+        d3
+          .zoom()
+          .scaleExtent([0.006, 6])
+          .on('zoom', this.handleEvent('zoom'))
+          .on('end', this.handleEvent('zoomEnd'))
+      )
+      .on('dblclick.zoom', null)
   }
   draw = values => {
     if (!this.getIsInitiated()) {
