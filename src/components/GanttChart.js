@@ -85,7 +85,7 @@ class GanttChart {
         this.setIsZooming(true)
         this.scale.zoom(d3.event.transform)
         this.redraw()
-        this.removeScheduleTootlip()
+        this.removeScheduleTooltip()
       },
       resize: () => {
         this.scale.resize(this.getScheduleRange())
@@ -123,7 +123,7 @@ class GanttChart {
           d3.event.type === 'drag' &&
           this.isEventSelected(d3.event.subject.id)
         ) {
-          this.removeScheduleTootlip()
+          this.removeScheduleTooltip()
           this.moveEvents(d3.event.subject, d3.event.x)
           // this.container.style('cursor', 'grabbing')
         } else if (d3.event.type === 'end' && this.getModifiedEvents()) {
@@ -212,6 +212,7 @@ class GanttChart {
   scheduleClipRect
   scheduleSectionBackground
   scheduleRect
+  getScheduleRect = () => {}
   lineAxisGroup
   getTimeLegendGroupTicks = () => {}
 
@@ -440,25 +441,28 @@ class GanttChart {
       .append('g')
       .attr('clip-path', event => this.getScheduleClipUrl(event))
       .append('rect')
+      .attr('id', event => `scheduleRect_${event.id}`)
       .attr('y', this.LINE_PADDING)
       .attr('height', this.EVENT_RECT_HEIGHT)
       .attr('fill', event => event.style.bg)
       .attr('rx', 5)
       .style('cursor', 'pointer')
 
+    this.getScheduleRect = eventId => d3.select(`#scheduleRect_${eventId}`)
+
     this.scheduleRect
-      .on('mouseout', this.removeScheduleTootlip)
+      .on('mouseout', this.removeScheduleTooltip)
       .on('mouseover', event => {
         if (!this.getIsZooming() && !this.getModifiedEvents()) {
           this.addDataToScheduleTooltip(event)
-          this.makeScheduleTooltipVisible()
+          this.makeScheduleTooltipVisible(event)
         }
       })
       .on('click', this.handleEvent('clickRect'))
       .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
   }
 
-  removeScheduleTootlip = () =>
+  removeScheduleTooltip = () =>
     this.scheduleRectTooltip
       .style('opacity', 0)
       .selectAll('div')
@@ -507,9 +511,15 @@ class GanttChart {
     this.scheduleRectTooltip.selectAll('div').sort((a, b) => a.index - b.index)
   }
 
-  makeScheduleTooltipVisible = () => {
+  makeScheduleTooltipVisible = event => {
+    const topOffset =
+      this.getScheduleRect(event.id)
+        .node()
+        .getBoundingClientRect().top +
+      this.EVENT_RECT_HEIGHT +
+      window.pageYOffset
     this.scheduleRectTooltip
-      .style('top', `${d3.event.pageY + this.TOOLTIP_PADDING}px`)
+      .style('top', `${topOffset}px`)
       .style('left', `${this.getToolTipLeftOffset(this.scheduleRectTooltip)}px`)
       .style('opacity', 1)
   }
