@@ -15,6 +15,7 @@ class GanttChart {
     this.onMoveEvents = onMoveEvents
     this.modifiedEvents = undefined
     this.onBoundariesChange = onBoundariesChange
+    this.isZooming = false
   }
 
   setValues = values => (this.values = values)
@@ -40,6 +41,10 @@ class GanttChart {
   setModifiedEvents = modifiedEvents => (this.modifiedEvents = modifiedEvents)
 
   getModifiedEvents = () => this.modifiedEvents
+
+  setIsZooming = isZooming => (this.isZooming = isZooming)
+
+  getIsZooming = () => this.isZooming
 
   getTotalEventsSvgDivHeight = eventNumber => eventNumber * this.LINE_HEIGHT
 
@@ -69,15 +74,17 @@ class GanttChart {
         this.scheduleSectionBackground.style('cursor', 'grabbing')
       },
       zoomEnd: () => {
+        this.setIsZooming(false)
         this.scheduleSectionBackground.style('cursor', 'grab')
         if (!d3.event.sourceEvent) {
           this.onBoundariesChange(this.scale.getTimeBoundaries())
         }
       },
       zoom: () => {
-        console.log('zoom')
+        this.setIsZooming(true)
         this.scale.zoom(d3.event.transform)
         this.redraw()
+        this.removeScheduleTootlip()
       },
       resize: () => {
         this.scale.resize(this.getScheduleRange())
@@ -115,6 +122,7 @@ class GanttChart {
           d3.event.type === 'drag' &&
           this.isEventSelected(d3.event.subject.id)
         ) {
+          this.removeScheduleTootlip()
           this.moveEvents(d3.event.subject, d3.event.x)
         } else if (d3.event.type === 'end' && this.getModifiedEvents()) {
           this.onMoveEvents(this.getModifiedEvents())
@@ -437,19 +445,22 @@ class GanttChart {
       .style('cursor', 'pointer')
 
     this.scheduleRect
-      .on('mouseout', () => {
-        this.scheduleRectTooltip
-          .style('opacity', 0)
-          .selectAll('div')
-          .remove()
-      })
+      .on('mouseout', this.removeScheduleTootlip)
       .on('mouseover', event => {
-        this.addDataToScheduleTooltip(event)
-        this.makeScheduleTooltipVisible()
+        if (!this.getIsZooming() && !this.getModifiedEvents()) {
+          this.addDataToScheduleTooltip(event)
+          this.makeScheduleTooltipVisible()
+        }
       })
       .on('click', this.handleEvent('clickRect'))
       .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
   }
+
+  removeScheduleTootlip = () =>
+    this.scheduleRectTooltip
+      .style('opacity', 0)
+      .selectAll('div')
+      .remove()
 
   formatSelectedEvents = () => {
     this.scheduleRect
