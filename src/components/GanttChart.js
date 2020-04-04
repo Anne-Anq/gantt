@@ -487,7 +487,9 @@ class GanttChart {
   }
 
   removeScheduleTooltip = () => {
-    this.getTooltipDataDivs().remove()
+    if (this.getTooltipDataDivs()) {
+      this.getTooltipDataDivs().remove()
+    }
     this.scheduleRectTooltip.style('display', 'none')
   }
 
