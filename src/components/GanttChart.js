@@ -53,13 +53,23 @@ class GanttChart {
   moveToTitleWidth = node =>
     node.attr('transform', `translate(${this.getTitleWidth()})`)
 
-  getToolTipLeftOffset = (node, parentNodePosition) => {
-    const tooltipWidth = node.node().clientWidth // if display is none this width is 0
+  getToolTipLeftOffset = (tooltipNode, refLeftX) => {
+    const tooltipWidth = tooltipNode.clientWidth // if display is none this width is 0
     const containerWidth = this.container.node().clientWidth
-    return parentNodePosition - this.TOOLTIP_PADDING + tooltipWidth <
-      containerWidth
-      ? parentNodePosition - this.TOOLTIP_PADDING
-      : containerWidth - tooltipWidth
+
+    const minLeftOffset =
+      refLeftX - this.TOOLTIP_PADDING + tooltipWidth < containerWidth
+        ? refLeftX - this.TOOLTIP_PADDING
+        : containerWidth - tooltipWidth
+
+    const tooltipRightX = minLeftOffset + tooltipWidth
+    const arrowRightX =
+      d3.event.pageX + this.TOOLTIP_PADDING + this.ARROW_HALF_WIDTH
+    const distanceTooltipToArrow = tooltipRightX - arrowRightX
+
+    return distanceTooltipToArrow > 0
+      ? minLeftOffset
+      : minLeftOffset - distanceTooltipToArrow
   }
 
   getScheduleSectionWidth = () =>
@@ -188,6 +198,7 @@ class GanttChart {
   LOGO_DOWN = 'keyboard_arrow_down'
   TRANSITION_DURATION = 200
   TOOLTIP_PADDING = 15
+  ARROW_HALF_WIDTH = 8
 
   container
   timeLineDiv
@@ -462,13 +473,18 @@ class GanttChart {
       }
     }
 
+    const onMouseMove = this.moveTooltip
+
     this.scheduleRect
       .on('mouseout', this.removeScheduleTooltip)
       .on('mouseover', function(event) {
         // thanks to anonymous fn I can get `this` scheduleRect
         onMouseOver(event, this)
       })
-      .on('mousemove', this.moveTooltipArrow)
+      .on('mousemove', function() {
+        // thanks to anonymous fn I can get `this` scheduleRect
+        onMouseMove(this)
+      })
       .on('click', this.handleEvent('clickRect'))
       .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
   }
@@ -537,26 +553,17 @@ class GanttChart {
     this.scheduleRectTooltip
       .style('display', 'grid')
       .style('top', `${topOffset}px`)
-      .style(
-        'left',
-        `${this.getToolTipLeftOffset(
-          this.scheduleRectTooltip,
-          thatScheduleRectNode.getBoundingClientRect().left
-        )}px`
-      )
-      .style('display', 'grid')
-
-    this.moveTooltipArrow()
+    this.moveTooltip(thatScheduleRectNode)
   }
 
-  moveTooltipArrow = () => {
-    if (!d3.event) return
-    this.scheduleRectTooltipArrow.style(
-      'left',
-      `${d3.event.pageX -
-        this.TOOLTIP_PADDING -
-        this.scheduleRectTooltip.node().getBoundingClientRect().left}px`
+  moveTooltip = thatScheduleRectNode => {
+    const tooltipOffset = this.getToolTipLeftOffset(
+      this.scheduleRectTooltip.node(),
+      thatScheduleRectNode.getBoundingClientRect().left
     )
+    this.scheduleRectTooltip.style('left', `${tooltipOffset}px`)
+    const arrowOffset = d3.event.pageX - this.ARROW_HALF_WIDTH - tooltipOffset
+    this.scheduleRectTooltipArrow.style('left', `${arrowOffset}px`)
   }
 
   addLineAxisGroup = () => {
@@ -632,7 +639,10 @@ class GanttChart {
           .style('top', `${d3.event.pageY + this.TOOLTIP_PADDING}px`)
           .style(
             'left',
-            `${this.getToolTipLeftOffset(this.dateTooltip, d3.event.pageX)}px`
+            `${this.getToolTipLeftOffset(
+              this.dateTooltip.node(),
+              d3.event.pageX
+            )}px`
           )
           .style('opacity', 1)
       })

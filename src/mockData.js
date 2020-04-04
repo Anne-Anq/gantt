@@ -27,7 +27,7 @@ export const mockData = [
     id: 'event2Id',
     title: 'event2Name',
     startTime: addMinutes(addHours(today, 19), 36),
-    endTime: addMinutes(addHours(today, 20), 56),
+    endTime: addMinutes(addHours(today, 23), 56),
     lookupTags: ['entity2name', 'Jobsite1name'],
     style: {
       text: '#f983321',
