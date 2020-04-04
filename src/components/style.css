@@ -64,7 +64,6 @@
   top: 0;
   width: fit-content;
   min-width: 30px;
-  opacity: 0;
   background-color: white;
   border-radius: 5px;
   padding: 5px;
@@ -76,13 +75,29 @@
 #dateTooltip {
   height: 15px;
   padding-top: 0;
+  opacity: 0;
 }
 #scheduleRectTooltip {
-  display: grid;
+  display: none;
   max-width: 350px;
+  z-index: -0;
   grid-template-columns: max-content auto;
   grid-auto-rows: max-content;
 }
+
+#scheduleRectTooltipArrow {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -3px;
+  left: 10px;
+  height: 5px;
+  width: 12px;
+  background: white;
+  transform: rotate(69deg) skew(45deg);
+  border-radius: 2px;
+}
+
 #scheduleRectTooltip div {
   padding: 5px;
   display: flex;

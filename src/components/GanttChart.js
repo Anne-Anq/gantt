@@ -53,11 +53,12 @@ class GanttChart {
   moveToTitleWidth = node =>
     node.attr('transform', `translate(${this.getTitleWidth()})`)
 
-  getToolTipLeftOffset = node => {
-    const tooltipWidth = node.node().clientWidth
+  getToolTipLeftOffset = (node, parentNodePosition) => {
+    const tooltipWidth = node.node().clientWidth // if display is none this width is 0
     const containerWidth = this.container.node().clientWidth
-    return d3.event.pageX - this.TOOLTIP_PADDING + tooltipWidth < containerWidth
-      ? d3.event.pageX - this.TOOLTIP_PADDING
+    return parentNodePosition - this.TOOLTIP_PADDING + tooltipWidth <
+      containerWidth
+      ? parentNodePosition - this.TOOLTIP_PADDING
       : containerWidth - tooltipWidth
   }
 
@@ -193,6 +194,8 @@ class GanttChart {
   timeLegendGroup
   dateTooltip
   scheduleRectTooltip
+  scheduleRectTooltipArrow
+  getTooltipDataDivs = () => {}
   main
   searchValueDiv
   searchValueTitleDiv
@@ -237,6 +240,11 @@ class GanttChart {
       .append('div')
       .attr('id', 'scheduleRectTooltip')
       .classed('tooltip', true)
+
+    this.scheduleRectTooltipArrow = this.scheduleRectTooltip
+      .append('div')
+      .attr('id', 'scheduleRectTooltipArrow')
+
     this.main = this.container.append('div').attr('id', 'main')
     this.toggleShowMainDivs()
     this.setIsInitiated(true)
@@ -453,21 +461,22 @@ class GanttChart {
         this.makeScheduleTooltipVisible(thatScheduleRectNode)
       }
     }
+
     this.scheduleRect
       .on('mouseout', this.removeScheduleTooltip)
       .on('mouseover', function(event) {
         // thanks to anonymous fn I can get `this` scheduleRect
         onMouseOver(event, this)
       })
+      .on('mousemove', this.moveTooltipArrow)
       .on('click', this.handleEvent('clickRect'))
       .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
   }
 
-  removeScheduleTooltip = () =>
-    this.scheduleRectTooltip
-      .style('opacity', 0)
-      .selectAll('div')
-      .remove()
+  removeScheduleTooltip = () => {
+    this.getTooltipDataDivs().remove()
+    this.scheduleRectTooltip.style('display', 'none')
+  }
 
   formatSelectedEvents = () => {
     this.scheduleRect
@@ -507,8 +516,15 @@ class GanttChart {
     detailEnter
       .append('div')
       .text(content => content.label)
-      .attr('class', 'detailLabel')
-    detailEnter.append('div').text(content => content.value)
+      .attr('class', 'detailLabel detail')
+    detailEnter
+      .append('div')
+      .text(content => content.value)
+      .attr('class', 'detail')
+
+    this.getTooltipDataDivs = () =>
+      this.scheduleRectTooltip.selectAll('div.detail')
+
     this.scheduleRectTooltip.selectAll('div').sort((a, b) => a.index - b.index)
   }
 
@@ -519,9 +535,28 @@ class GanttChart {
       window.pageYOffset +
       this.TOOLTIP_PADDING
     this.scheduleRectTooltip
+      .style('display', 'grid')
       .style('top', `${topOffset}px`)
-      .style('left', `${this.getToolTipLeftOffset(this.scheduleRectTooltip)}px`)
-      .style('opacity', 1)
+      .style(
+        'left',
+        `${this.getToolTipLeftOffset(
+          this.scheduleRectTooltip,
+          thatScheduleRectNode.getBoundingClientRect().left
+        )}px`
+      )
+      .style('display', 'grid')
+
+    this.moveTooltipArrow()
+  }
+
+  moveTooltipArrow = () => {
+    if (!d3.event) return
+    this.scheduleRectTooltipArrow.style(
+      'left',
+      `${d3.event.pageX -
+        this.TOOLTIP_PADDING -
+        this.scheduleRectTooltip.node().getBoundingClientRect().left}px`
+    )
   }
 
   addLineAxisGroup = () => {
@@ -595,7 +630,10 @@ class GanttChart {
         this.dateTooltip
           .text(fullDateTimeFormat(d))
           .style('top', `${d3.event.pageY + this.TOOLTIP_PADDING}px`)
-          .style('left', `${this.getToolTipLeftOffset(this.dateTooltip)}px`)
+          .style(
+            'left',
+            `${this.getToolTipLeftOffset(this.dateTooltip, d3.event.pageX)}px`
+          )
           .style('opacity', 1)
       })
   }
