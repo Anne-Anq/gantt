@@ -107,9 +107,6 @@ class GanttChart {
         this.scale.resize(this.getScheduleRange())
         this.redraw()
       },
-      mousedown: () => {
-        this.unselectAllEvents()
-      },
       clickRect: event => {
         d3.event.stopPropagation()
         if (!this.getIsCtrlKeyDown()) {
@@ -577,8 +574,6 @@ class GanttChart {
 
   addListeners = () => {
     window.addEventListener('resize', this.handleEvent('resize'))
-
-    d3.select('body').on('mousedown', this.handleEvent('mousedown'))
     d3.select('body').on('keydown', this.handleEvent('keydown'))
     d3.select('body').on('keyup', this.handleEvent('keyup'))
     this.scheduleSection
