@@ -212,7 +212,6 @@ class GanttChart {
   scheduleClipRect
   scheduleSectionBackground
   scheduleRect
-  getScheduleRect = () => {}
   lineAxisGroup
   getTimeLegendGroupTicks = () => {}
 
@@ -448,15 +447,17 @@ class GanttChart {
       .attr('rx', 5)
       .style('cursor', 'pointer')
 
-    this.getScheduleRect = eventId => d3.select(`#scheduleRect_${eventId}`)
-
+    const onMouseOver = (event, thatScheduleRectNode) => {
+      if (!this.getIsZooming() && !this.getModifiedEvents()) {
+        this.addDataToScheduleTooltip(event)
+        this.makeScheduleTooltipVisible(thatScheduleRectNode)
+      }
+    }
     this.scheduleRect
       .on('mouseout', this.removeScheduleTooltip)
-      .on('mouseover', event => {
-        if (!this.getIsZooming() && !this.getModifiedEvents()) {
-          this.addDataToScheduleTooltip(event)
-          this.makeScheduleTooltipVisible(event)
-        }
+      .on('mouseover', function(event) {
+        // thanks to anonymous fn I can get `this` scheduleRect
+        onMouseOver(event, this)
       })
       .on('click', this.handleEvent('clickRect'))
       .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
@@ -511,13 +512,12 @@ class GanttChart {
     this.scheduleRectTooltip.selectAll('div').sort((a, b) => a.index - b.index)
   }
 
-  makeScheduleTooltipVisible = event => {
+  makeScheduleTooltipVisible = thatScheduleRectNode => {
     const topOffset =
-      this.getScheduleRect(event.id)
-        .node()
-        .getBoundingClientRect().top +
+      thatScheduleRectNode.getBoundingClientRect().top +
       this.EVENT_RECT_HEIGHT +
-      window.pageYOffset
+      window.pageYOffset +
+      this.TOOLTIP_PADDING
     this.scheduleRectTooltip
       .style('top', `${topOffset}px`)
       .style('left', `${this.getToolTipLeftOffset(this.scheduleRectTooltip)}px`)
