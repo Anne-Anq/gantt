@@ -194,6 +194,7 @@ class GanttChart {
   LOGO_UP = 'keyboard_arrow_up'
   LOGO_DOWN = 'keyboard_arrow_down'
   TRANSITION_DURATION = 200
+  TRANSITION_DELAY = 800
   TOOLTIP_PADDING = 15
   ARROW_HALF_WIDTH = 8
 
@@ -554,6 +555,11 @@ class GanttChart {
       .style('display', 'grid')
       .style('top', `${topOffset}px`)
     this.moveTooltip(thatScheduleRectNode)
+    this.scheduleRectTooltip
+      .style('opacity', 0)
+      .transition(this.TRANSITION_DURATION)
+      .delay(this.TRANSITION_DELAY)
+      .style('opacity', 1)
   }
 
   moveTooltip = thatScheduleRectNode => {
@@ -642,6 +648,9 @@ class GanttChart {
               d3.event.pageX
             )}px`
           )
+          .style('opacity', 0)
+          .transition(this.TRANSITION_DURATION)
+          .delay(this.TRANSITION_DELAY)
           .style('opacity', 1)
       })
   }
