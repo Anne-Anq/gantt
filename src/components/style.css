@@ -44,20 +44,19 @@
   font-size: 1.2em;
 }
 .evenLine {
-  fill: rgb(244, 244, 255);
+  fill: rgb(244, 244, 255, 0.7);
 }
 .oddLine {
-  fill: rgb(208, 208, 221);
+  fill: rgb(208, 208, 221, 0.7);
 }
 .eventTitleText {
   alignment-baseline: middle;
 }
 .tick {
   stroke-dasharray: 4;
-  color: #a7a7a7;
 }
-.tickLines {
-  color: grey;
+#timeLegendGroup g.tick {
+  color: #a09393;
 }
 .tooltip {
   position: absolute;

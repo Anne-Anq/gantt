@@ -328,12 +328,12 @@ class GanttChart {
       .append('svg')
       .attr('class', 'eventsSvg')
 
-    this.addSingleEventGroup()
     this.addLineAxisGroup()
+    this.addSingleEventGroup()
   }
 
   addSingleEventGroup = () => {
-    const allEvents = this.eventsSvg.selectAll('g').data(
+    const allEvents = this.eventsSvg.selectAll('g.event').data(
       value => value.events,
       event => event.id
     )
@@ -341,6 +341,7 @@ class GanttChart {
     this.singleLineGroup = allEvents
       .enter()
       .append('g')
+      .attr('class', 'event')
       .merge(allEvents)
       .attr(
         'transform',
