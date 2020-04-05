@@ -144,13 +144,11 @@ class GanttChart {
           this.unselectAllEvents()
         }
         if (d3.event.key === 'Control') {
-          this.scheduleSectionBackground.style('cursor', 'all-scroll')
           this.setIsCtrlKeyDown(true)
         }
       },
       keyup: () => {
         if (d3.event.key === 'Control') {
-          this.scheduleSectionBackground.style('cursor', 'grab')
           this.setIsCtrlKeyDown(false)
         }
       }
