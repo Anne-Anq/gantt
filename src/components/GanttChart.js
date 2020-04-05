@@ -557,7 +557,8 @@ class GanttChart {
     this.moveTooltip(thatScheduleRectNode)
     this.scheduleRectTooltip
       .style('opacity', 0)
-      .transition(this.TRANSITION_DURATION)
+      .transition()
+      .duration(this.TRANSITION_DURATION)
       .delay(this.TRANSITION_DELAY)
       .style('opacity', 1)
   }
@@ -636,7 +637,7 @@ class GanttChart {
       .attr('fill', 'transparent')
       .attr('r', this.TOOLTIP_PADDING)
       .attr('y', -this.TIMELINE_HEIGHT)
-      .on('mouseout', () => this.dateTooltip.style('opacity', 0))
+      .on('mouseout', () => this.dateTooltip.transition().style('opacity', 0))
       .on('mouseover', d => {
         this.dateTooltip
           .text(fullDateTimeFormat(d))
@@ -649,7 +650,8 @@ class GanttChart {
             )}px`
           )
           .style('opacity', 0)
-          .transition(this.TRANSITION_DURATION)
+          .transition()
+          .duration(this.TRANSITION_DURATION)
           .delay(this.TRANSITION_DELAY)
           .style('opacity', 1)
       })
