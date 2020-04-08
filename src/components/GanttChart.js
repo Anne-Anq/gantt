@@ -20,6 +20,7 @@ class GanttChart {
     this.modifiedEvents = undefined
     this.onBoundariesChange = onBoundariesChange
     this.isZooming = false
+    this.dragAnchorPoint = undefined
   }
 
   setValues = values => (this.values = values)
@@ -49,6 +50,11 @@ class GanttChart {
   setIsZooming = isZooming => (this.isZooming = isZooming)
 
   getIsZooming = () => this.isZooming
+
+  setDragAnchorPoint = dragAnchorPoint =>
+    (this.dragAnchorPoint = dragAnchorPoint)
+
+  getDragAnchorPoint = () => this.dragAnchorPoint
 
   getTotalEventsSvgDivHeight = eventNumber => eventNumber * this.LINE_HEIGHT
 
@@ -136,9 +142,16 @@ class GanttChart {
           this.isEventSelected(d3.event.subject.id)
         ) {
           this.removeScheduleTooltip()
+          if (!this.getDragAnchorPoint()) {
+            this.setDragAnchorPoint(
+              d3.event.x -
+                this.getScheduleRectsByEvent(d3.event.subject).attr('x')
+            )
+          }
           this.moveEvents(d3.event.subject, d3.event.x)
           // this.container.style('cursor', 'grabbing')
         } else if (d3.event.type === 'end' && this.getModifiedEvents()) {
+          this.setDragAnchorPoint()
           this.onMoveEvents(this.getModifiedEvents())
           this.setModifiedEvents()
         }
@@ -226,6 +239,7 @@ class GanttChart {
   scheduleClipRect
   scheduleSectionBackground
   scheduleRect
+  getScheduleRectsByEvent = () => {}
   lineAxisGroup
   getTimeLegendGroupTicks = () => {}
 
@@ -460,12 +474,15 @@ class GanttChart {
       .append('g')
       .attr('clip-path', event => this.getScheduleClipUrl(event))
       .append('rect')
-      .attr('id', event => `scheduleRect_${event.id}`)
+      .attr('class', event => `scheduleRect_${event.id}`)
       .attr('y', this.LINE_PADDING)
       .attr('height', this.EVENT_RECT_HEIGHT)
       .attr('fill', event => event.style.bg)
       .attr('rx', 5)
       .style('cursor', 'pointer')
+
+    this.getScheduleRectsByEvent = event =>
+      d3.selectAll(`.scheduleRect_${event.id}`)
 
     const onMouseOver = (event, thatScheduleRectNode) => {
       if (!this.getIsZooming() && !this.getModifiedEvents()) {
@@ -675,7 +692,10 @@ class GanttChart {
       .filter(({ id }) => this.isEventSelected(id))
       .attr('x', event => {
         const newX =
-          xCoord + XScale(event.startTime) - XScale(targetEvent.startTime)
+          xCoord +
+          XScale(event.startTime) -
+          XScale(targetEvent.startTime) -
+          this.getDragAnchorPoint()
         const duration = differenceInMinutes(event.endTime, event.startTime)
         const startTime = XScale.invert(newX)
         const endTime = addMinutes(startTime, duration)
