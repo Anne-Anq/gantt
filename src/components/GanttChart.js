@@ -4,7 +4,11 @@ import { ScaleManager } from './ScaleManager'
 import tinycolor from 'tinycolor2'
 import { differenceInMinutes, addMinutes } from 'date-fns'
 class GanttChart {
-  constructor({ containerId, onMoveEvents, onBoundariesChange }) {
+  constructor({
+    containerId,
+    onMoveEvents = () => {},
+    onBoundariesChange = () => {}
+  }) {
     this.values = []
     this.containerId = containerId
     this.titleWidth = this.DEFAULT_EVENT_TITLE_WIDTH

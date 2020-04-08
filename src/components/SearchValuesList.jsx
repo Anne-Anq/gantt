@@ -4,15 +4,15 @@ import './style.css'
 
 export const SearchValuesList = ({ values }) => {
   const [mounted, setMounted] = useState(false)
-  const handleMoveEvents = events => console.log('new events data', events)
-  const handleBoundariesChange = boundaries =>
-    console.log('new boundaries', boundaries)
+  // const handleMoveEvents = events => console.log('new events data', events)
+  // const handleBoundariesChange = boundaries =>
+  //   console.log('new boundaries', boundaries)
 
   const ganttChart = useRef(
     new GanttChart({
-      containerId: 'container',
-      onMoveEvents: handleMoveEvents,
-      onBoundariesChange: handleBoundariesChange
+      containerId: 'container'
+      // onMoveEvents: handleMoveEvents,
+      // onBoundariesChange: handleBoundariesChange
     })
   )
   const { draw } = ganttChart.current
