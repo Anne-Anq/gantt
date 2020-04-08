@@ -507,6 +507,7 @@ class GanttChart {
       )
       .attr('stroke', 'grey')
       .attr('stroke-width', 2)
+      .style('cursor', 'move')
 
     this.eventTitleText
       .filter(({ id }) => this.isEventSelected(id))
@@ -516,6 +517,7 @@ class GanttChart {
       .filter(({ id }) => !this.isEventSelected(id))
       .attr('stroke-width', 0)
       .attr('fill', event => event.style.bg)
+      .style('cursor', 'pointer')
 
     this.eventTitleText
       .filter(({ id }) => !this.isEventSelected(id))
