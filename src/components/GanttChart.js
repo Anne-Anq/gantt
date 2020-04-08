@@ -588,7 +588,7 @@ class GanttChart {
       .call(
         d3
           .zoom()
-          .scaleExtent([0.006, 6])
+          .scaleExtent([0.06, 6])
           .on('zoom', this.handleEvent('zoom'))
           .on('end', this.handleEvent('zoomEnd'))
       )

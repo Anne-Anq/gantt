@@ -20,17 +20,28 @@ class ScaleManager {
 
   _setRange = newRange => this._setScale(this._getScale().range(newRange))
 
-  get = () =>
-    this.transformEvent ? this.transformEvent.rescaleX(this.scale) : this.scale
+  get = () => this._getScale()
 
-  zoom = transformEvent => this._setTransformEvent(transformEvent)
+  revertedZoomScale = () => {
+    return this._getScale()
+      .copy()
+      .domain(
+        this._getScale()
+          .range()
+          .map(this._getTransformEvent().applyX, this._getTransformEvent())
+          .map(this._getScale().invert)
+      )
+  }
+
+  zoom = transformEvent => {
+    const unZoomedScale = this._getTransformEvent()
+      ? this.revertedZoomScale()
+      : this._getScale()
+    this._setTransformEvent(transformEvent)
+    this._setScale(transformEvent.rescaleX(unZoomedScale))
+  }
 
   resize = newRange => {
-    const transformEvent = this._getTransformEvent()
-    if (transformEvent) {
-      this._setScale(transformEvent.rescaleX(this._getScale()))
-      this._setTransformEvent(undefined)
-    }
     this._setRange(newRange)
   }
 
