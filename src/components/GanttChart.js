@@ -499,6 +499,8 @@ class GanttChart {
       .attr('stroke-width', 2)
       .attr('cy', this.EVENT_RECT_HEIGHT / 2 + this.LINE_PADDING)
       .attr('r', 4)
+      .style('cursor', 'ew-resize')
+      .attr('visibility', 'hidden')
 
     this.getScheduleRectsByEvent = event =>
       d3.selectAll(`.scheduleRect_${event.id}`)
@@ -545,6 +547,10 @@ class GanttChart {
       .attr('stroke-width', 2)
       .style('cursor', 'move')
 
+    this.rectHandle
+      .filter(({ id }) => this.isEventSelected(id))
+      .attr('visibility', 'visible')
+
     this.eventTitleText
       .filter(({ id }) => this.isEventSelected(id))
       .style('font-weight', 'bold')
@@ -558,6 +564,10 @@ class GanttChart {
     this.eventTitleText
       .filter(({ id }) => !this.isEventSelected(id))
       .style('font-weight', 'normal')
+
+    this.rectHandle
+      .filter(({ id }) => !this.isEventSelected(id))
+      .attr('visibility', 'hidden')
   }
 
   addDataToScheduleTooltip = event => {
