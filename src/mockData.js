@@ -48,7 +48,7 @@ export const mockData = [
     lookupTags: ['entity2name', 'jobsite2name'],
     style: {
       text: '#f933321',
-      bg: '##3568ff'
+      bg: '#3568ff'
     },
     detailContent: [
       { label: 'Event', value: 'Event3Name' },

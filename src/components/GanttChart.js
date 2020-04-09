@@ -239,6 +239,7 @@ class GanttChart {
   scheduleClipRect
   scheduleSectionBackground
   scheduleRect
+  rectHandle
   getScheduleRectsByEvent = () => {}
   lineAxisGroup
   getTimeLegendGroupTicks = () => {}
@@ -470,9 +471,10 @@ class GanttChart {
   }
 
   addScheduleRect = () => {
-    this.scheduleRect = this.scheduleSection
+    const scheduleGroup = this.scheduleSection
       .append('g')
       .attr('clip-path', event => this.getScheduleClipUrl(event))
+    this.scheduleRect = scheduleGroup
       .append('rect')
       .attr('class', event => `scheduleRect_${event.id}`)
       .attr('y', this.LINE_PADDING)
@@ -480,6 +482,23 @@ class GanttChart {
       .attr('fill', event => event.style.bg)
       .attr('rx', 5)
       .style('cursor', 'pointer')
+
+    this.rectHandle = scheduleGroup
+      .selectAll('circle')
+      .data(event =>
+        [event.startTime, event.endTime].map(time => ({ time, ...event }))
+      )
+      .enter()
+      .append('circle')
+      .attr('fill', event =>
+        tinycolor(event.style.bg)
+          .lighten(20)
+          .toString()
+      )
+      .attr('stroke', event => event.style.bg)
+      .attr('stroke-width', 2)
+      .attr('cy', this.EVENT_RECT_HEIGHT / 2 + this.LINE_PADDING)
+      .attr('r', 4)
 
     this.getScheduleRectsByEvent = event =>
       d3.selectAll(`.scheduleRect_${event.id}`)
@@ -522,7 +541,7 @@ class GanttChart {
           .lighten(20)
           .toString()
       )
-      .attr('stroke', 'grey')
+      .attr('stroke', event => event.style.bg)
       .attr('stroke-width', 2)
       .style('cursor', 'move')
 
@@ -683,6 +702,7 @@ class GanttChart {
     this.scheduleRect
       .attr('x', event => XScale(event.startTime))
       .attr('width', event => XScale(event.endTime) - XScale(event.startTime))
+    this.rectHandle.attr('cx', event => XScale(event.time))
   }
 
   moveEvents = (targetEvent, xCoord) => {
