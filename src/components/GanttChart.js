@@ -708,20 +708,23 @@ class GanttChart {
   moveEvents = (targetEvent, xCoord) => {
     const XScale = this.scale.get()
     const modifiedEvents = {}
+    const newX = dataForX =>
+      xCoord +
+      XScale(dataForX) -
+      XScale(targetEvent.startTime) -
+      this.getDragAnchorPoint()
     this.scheduleRect
       .filter(({ id }) => this.isEventSelected(id))
       .attr('x', event => {
-        const newX =
-          xCoord +
-          XScale(event.startTime) -
-          XScale(targetEvent.startTime) -
-          this.getDragAnchorPoint()
         const duration = differenceInMinutes(event.endTime, event.startTime)
-        const startTime = XScale.invert(newX)
+        const startTime = XScale.invert(newX(event.startTime))
         const endTime = addMinutes(startTime, duration)
         modifiedEvents[event.id] = { startTime, endTime }
-        return newX
+        return newX(event.startTime)
       })
+    this.rectHandle
+      .filter(({ id }) => this.isEventSelected(id))
+      .attr('cx', event => newX(event.time))
     this.setModifiedEvents({ ...this.getModifiedEvents(), ...modifiedEvents })
   }
 
