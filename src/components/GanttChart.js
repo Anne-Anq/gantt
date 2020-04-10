@@ -156,6 +156,9 @@ class GanttChart {
           this.setModifiedEvents()
         }
       },
+      dragRectHandle: () => {
+        console.log(d3.event.subject)
+      },
       keydown: () => {
         if (d3.event.key === 'Escape') {
           this.unselectAllEvents()
@@ -485,9 +488,7 @@ class GanttChart {
 
     this.rectHandle = scheduleGroup
       .selectAll('circle')
-      .data(event =>
-        [event.startTime, event.endTime].map(time => ({ time, ...event }))
-      )
+      .data(event => ['startTime', 'endTime'].map(time => ({ time, ...event })))
       .enter()
       .append('circle')
       .attr('fill', event =>
@@ -501,6 +502,7 @@ class GanttChart {
       .attr('r', 4)
       .style('cursor', 'ew-resize')
       .attr('visibility', 'hidden')
+      .call(d3.drag().on('drag end', this.handleEvent('dragRectHandle')))
 
     this.getScheduleRectsByEvent = event =>
       d3.selectAll(`.scheduleRect_${event.id}`)
@@ -712,7 +714,7 @@ class GanttChart {
     this.scheduleRect
       .attr('x', event => XScale(event.startTime))
       .attr('width', event => XScale(event.endTime) - XScale(event.startTime))
-    this.rectHandle.attr('cx', event => XScale(event.time))
+    this.rectHandle.attr('cx', event => XScale(event[event.time]))
   }
 
   moveEvents = (targetEvent, xCoord) => {
@@ -734,7 +736,7 @@ class GanttChart {
       })
     this.rectHandle
       .filter(({ id }) => this.isEventSelected(id))
-      .attr('cx', event => newX(event.time))
+      .attr('cx', event => newX(event[event.time]))
     this.setModifiedEvents({ ...this.getModifiedEvents(), ...modifiedEvents })
   }
 
