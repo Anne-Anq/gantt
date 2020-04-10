@@ -6,7 +6,8 @@ class GanttChart {
   constructor({
     containerId,
     onMoveEvents = () => {},
-    onBoundariesChange = () => {}
+    onBoundariesChange = () => {},
+    minEventDuration = 1
   }) {
     this.values = []
     this.containerId = containerId
@@ -20,6 +21,7 @@ class GanttChart {
     this.onBoundariesChange = onBoundariesChange
     this.isZooming = false
     this.dragAnchorPoint = undefined
+    this.minEventDuration = minEventDuration
   }
 
   setValues = values => (this.values = values)
@@ -211,6 +213,7 @@ class GanttChart {
   TRANSITION_DELAY = 800
   TOOLTIP_PADDING = 15
   ARROW_HALF_WIDTH = 8
+  TIMES = ['startTime', 'endTime']
 
   container
   timeLineDiv
@@ -484,7 +487,7 @@ class GanttChart {
 
     this.rectHandle = scheduleGroup
       .selectAll('circle')
-      .data(event => ['startTime', 'endTime'].map(time => ({ time, ...event })))
+      .data(event => this.TIMES.map(time => ({ time, ...event })))
       .enter()
       .append('circle')
       .attr('fill', handleData =>
@@ -751,14 +754,13 @@ class GanttChart {
       this.scale.get()(target.startTime) -
       this.getDragAnchorPoint()
     return this.getSelectedEvents().reduce((result, event) => {
-      let { startTime, endTime } = event
-      if (target.time === 'startTime' || !target.time) {
-        startTime = XScale.invert(newX(event.startTime))
-      }
-      if (target.time === 'endTime' || !target.time) {
-        endTime = XScale.invert(newX(event.endTime))
-      }
-      result[event.id] = { startTime, endTime }
+      result[event.id] = {}
+      this.TIMES.forEach(time => {
+        result[event.id][time] =
+          time === target.time || !target.time
+            ? XScale.invert(newX(event[time]))
+            : event[time]
+      })
       return result
     }, {})
   }

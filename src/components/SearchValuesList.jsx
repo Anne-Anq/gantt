@@ -11,8 +11,9 @@ export const SearchValuesList = ({ values, updateEvents }) => {
   const ganttChart = useRef(
     new GanttChart({
       containerId: 'container',
-      onMoveEvents: handleMoveEvents
+      onMoveEvents: handleMoveEvents,
       // onBoundariesChange: handleBoundariesChange
+      minEventDuration: 15
     })
   )
   const { draw } = ganttChart.current
