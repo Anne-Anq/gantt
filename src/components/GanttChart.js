@@ -1,7 +1,6 @@
 import * as d3 from 'd3'
 import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
 import { ScaleManager } from './ScaleManager'
-import { uniqBy } from 'lodash'
 import tinycolor from 'tinycolor2'
 class GanttChart {
   constructor({
@@ -718,27 +717,8 @@ class GanttChart {
 
   moveEvents = (target, xCoord) => {
     const XScale = this.scale.get()
-    const newX = dataForX =>
-      xCoord +
-      this.scale.get()(dataForX) -
-      this.scale.get()(target.startTime) -
-      this.getDragAnchorPoint()
 
-    const movingEvents = uniqBy(
-      this.scheduleRect.filter(({ id }) => this.isEventSelected(id)).data(),
-      'id'
-    )
-    const modifiedEvents = movingEvents.reduce((result, event) => {
-      let { startTime, endTime } = event
-      if (target.time === 'startTime' || !target.time) {
-        startTime = XScale.invert(newX(event.startTime))
-      }
-      if (target.time === 'endTime' || !target.time) {
-        endTime = XScale.invert(newX(event.endTime))
-      }
-      result[event.id] = { startTime, endTime }
-      return result
-    }, {})
+    const modifiedEvents = this.getRescheduledEvents(target, xCoord)
 
     this.scheduleRect
       .filter(({ id }) => this.isEventSelected(id))
@@ -761,6 +741,26 @@ class GanttChart {
       )
 
     this.setModifiedEvents({ ...this.getModifiedEvents(), ...modifiedEvents })
+  }
+
+  getRescheduledEvents = (target, xCoord) => {
+    const XScale = this.scale.get()
+    const newX = dataForX =>
+      xCoord +
+      this.scale.get()(dataForX) -
+      this.scale.get()(target.startTime) -
+      this.getDragAnchorPoint()
+    return this.getSelectedEvents().reduce((result, event) => {
+      let { startTime, endTime } = event
+      if (target.time === 'startTime' || !target.time) {
+        startTime = XScale.invert(newX(event.startTime))
+      }
+      if (target.time === 'endTime' || !target.time) {
+        endTime = XScale.invert(newX(event.endTime))
+      }
+      result[event.id] = { startTime, endTime }
+      return result
+    }, {})
   }
 
   moveHandle = () => {
