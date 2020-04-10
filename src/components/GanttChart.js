@@ -1,8 +1,8 @@
 import * as d3 from 'd3'
 import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
 import { ScaleManager } from './ScaleManager'
+import { uniqBy } from 'lodash'
 import tinycolor from 'tinycolor2'
-import { differenceInMinutes, addMinutes } from 'date-fns'
 class GanttChart {
   constructor({
     containerId,
@@ -155,9 +155,6 @@ class GanttChart {
           this.onMoveEvents(this.getModifiedEvents())
           this.setModifiedEvents()
         }
-      },
-      dragRectHandle: () => {
-        console.log(d3.event.subject)
       },
       keydown: () => {
         if (d3.event.key === 'Escape') {
@@ -491,18 +488,18 @@ class GanttChart {
       .data(event => ['startTime', 'endTime'].map(time => ({ time, ...event })))
       .enter()
       .append('circle')
-      .attr('fill', event =>
-        tinycolor(event.style.bg)
+      .attr('fill', handleData =>
+        tinycolor(handleData.style.bg)
           .lighten(20)
           .toString()
       )
-      .attr('stroke', event => event.style.bg)
+      .attr('stroke', handleData => handleData.style.bg)
       .attr('stroke-width', 2)
       .attr('cy', this.EVENT_RECT_HEIGHT / 2 + this.LINE_PADDING)
       .attr('r', 4)
       .style('cursor', 'ew-resize')
       .attr('visibility', 'hidden')
-      .call(d3.drag().on('drag end', this.handleEvent('dragRectHandle')))
+      .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
 
     this.getScheduleRectsByEvent = event =>
       d3.selectAll(`.scheduleRect_${event.id}`)
@@ -714,29 +711,55 @@ class GanttChart {
     this.scheduleRect
       .attr('x', event => XScale(event.startTime))
       .attr('width', event => XScale(event.endTime) - XScale(event.startTime))
-    this.rectHandle.attr('cx', event => XScale(event[event.time]))
+    this.rectHandle.attr('cx', handleData =>
+      XScale(handleData[handleData.time])
+    )
   }
 
-  moveEvents = (targetEvent, xCoord) => {
+  moveEvents = (target, xCoord) => {
     const XScale = this.scale.get()
-    const modifiedEvents = {}
     const newX = dataForX =>
       xCoord +
-      XScale(dataForX) -
-      XScale(targetEvent.startTime) -
+      this.scale.get()(dataForX) -
+      this.scale.get()(target.startTime) -
       this.getDragAnchorPoint()
+
+    const movingEvents = uniqBy(
+      this.scheduleRect.filter(({ id }) => this.isEventSelected(id)).data(),
+      'id'
+    )
+    const modifiedEvents = movingEvents.reduce((result, event) => {
+      let { startTime, endTime } = event
+      if (target.time === 'startTime' || !target.time) {
+        startTime = XScale.invert(newX(event.startTime))
+      }
+      if (target.time === 'endTime' || !target.time) {
+        endTime = XScale.invert(newX(event.endTime))
+      }
+      result[event.id] = { startTime, endTime }
+      return result
+    }, {})
+
     this.scheduleRect
       .filter(({ id }) => this.isEventSelected(id))
-      .attr('x', event => {
-        const duration = differenceInMinutes(event.endTime, event.startTime)
-        const startTime = XScale.invert(newX(event.startTime))
-        const endTime = addMinutes(startTime, duration)
-        modifiedEvents[event.id] = { startTime, endTime }
-        return newX(event.startTime)
-      })
+      .attr('x', event => XScale(modifiedEvents[event.id].startTime))
+      .attr(
+        'width',
+        event =>
+          XScale(modifiedEvents[event.id].endTime) -
+          XScale(modifiedEvents[event.id].startTime)
+      )
+
     this.rectHandle
-      .filter(({ id }) => this.isEventSelected(id))
-      .attr('cx', event => newX(event[event.time]))
+      .filter(
+        handleData =>
+          this.isEventSelected(handleData.id) &&
+          (!target.time || handleData.time === target.time)
+      )
+      .attr('cx', handleData =>
+        XScale(modifiedEvents[handleData.id][handleData.time])
+      )
+
     this.setModifiedEvents({ ...this.getModifiedEvents(), ...modifiedEvents })
   }
 
