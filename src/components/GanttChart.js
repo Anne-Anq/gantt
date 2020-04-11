@@ -748,44 +748,47 @@ class GanttChart {
   }
 
   getRescheduledEvents = (target, xCoord) => {
-    const XScale = this.scale.get()
-    const newX = dataForX =>
-      xCoord +
-      this.scale.get()(dataForX) -
-      this.scale.get()(target.startTime) -
-      this.getDragAnchorPoint()
+    const getStartTime = this.getNewStartTime(target, xCoord)
+    const getEndTime = this.getNewEndTime(target, xCoord)
     return this.getSelectedEvents().reduce((result, event) => {
-      const newTime = time => XScale.invert(newX(time))
       result[event.id] = {
-        startTime: newTime(event.startTime),
-        endTime: newTime(event.endTime)
-      }
-      if (target.time === 'startTime') {
-        if (
-          differenceInMinutes(event.endTime, newTime(event.startTime)) <
-          this.minEventDuration
-        ) {
-          result[event.id].startTime = subMinutes(
-            event.endTime,
-            this.minEventDuration
-          )
-        }
-        result[event.id].endTime = event.endTime
-      }
-      if (target.time === 'endTime') {
-        result[event.id].startTime = event.startTime
-        if (
-          differenceInMinutes(newTime(event.endTime), event.startTime) <
-          this.minEventDuration
-        ) {
-          result[event.id].endTime = addMinutes(
-            event.startTime,
-            this.minEventDuration
-          )
-        }
+        startTime:
+          target.time === 'endTime' ? event.startTime : getStartTime(event),
+        endTime: target.time === 'startTime' ? event.endTime : getEndTime(event)
       }
       return result
     }, {})
+  }
+
+  getNewTime = (target, xCoord) => currentTime => {
+    const newX =
+      xCoord +
+      this.scale.get()(currentTime) -
+      this.scale.get()(target.startTime) -
+      this.getDragAnchorPoint()
+    return this.scale.get().invert(newX(currentTime))
+  }
+
+  getNewStartTime = (target, xCoord) => event => {
+    const newTime = this.getNewTime(target, xCoord)
+    if (
+      differenceInMinutes(event.endTime, newTime(event.startTime)) <
+      this.minEventDuration
+    ) {
+      return subMinutes(event.endTime, this.minEventDuration)
+    }
+    return newTime(event.startTime)
+  }
+
+  getNewEndTime = (target, xCoord) => event => {
+    const newTime = this.getNewTime(target, xCoord)
+    if (
+      differenceInMinutes(newTime(event.endTime), event.startTime) <
+      this.minEventDuration
+    ) {
+      return addMinutes(event.startTime, this.minEventDuration)
+    }
+    return newTime(event.endTime)
   }
 
   moveHandle = () => {
