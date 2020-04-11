@@ -2,6 +2,7 @@ import * as d3 from 'd3'
 import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
 import { ScaleManager } from './ScaleManager'
 import tinycolor from 'tinycolor2'
+import { differenceInMinutes, subMinutes, addMinutes } from 'date-fns'
 class GanttChart {
   constructor({
     containerId,
@@ -754,13 +755,35 @@ class GanttChart {
       this.scale.get()(target.startTime) -
       this.getDragAnchorPoint()
     return this.getSelectedEvents().reduce((result, event) => {
-      result[event.id] = {}
-      this.TIMES.forEach(time => {
-        result[event.id][time] =
-          time === target.time || !target.time
-            ? XScale.invert(newX(event[time]))
-            : event[time]
-      })
+      const newTime = time => XScale.invert(newX(time))
+      result[event.id] = {
+        startTime: newTime(event.startTime),
+        endTime: newTime(event.endTime)
+      }
+      if (target.time === 'startTime') {
+        if (
+          differenceInMinutes(event.endTime, newTime(event.startTime)) <
+          this.minEventDuration
+        ) {
+          result[event.id].startTime = subMinutes(
+            event.endTime,
+            this.minEventDuration
+          )
+        }
+        result[event.id].endTime = event.endTime
+      }
+      if (target.time === 'endTime') {
+        result[event.id].startTime = event.startTime
+        if (
+          differenceInMinutes(newTime(event.endTime), event.startTime) <
+          this.minEventDuration
+        ) {
+          result[event.id].endTime = addMinutes(
+            event.startTime,
+            this.minEventDuration
+          )
+        }
+      }
       return result
     }, {})
   }
