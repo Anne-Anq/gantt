@@ -766,7 +766,7 @@ class GanttChart {
       this.scale.get()(currentTime) -
       this.scale.get()(target.startTime) -
       this.getDragAnchorPoint()
-    return this.scale.get().invert(newX(currentTime))
+    return this.scale.get().invert(newX)
   }
 
   getNewStartTime = (target, xCoord) => event => {
