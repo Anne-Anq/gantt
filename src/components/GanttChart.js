@@ -151,7 +151,6 @@ class GanttChart {
             )
           }
           this.moveEvents(d3.event.subject, d3.event.x)
-          // this.container.style('cursor', 'grabbing')
         } else if (d3.event.type === 'end' && this.getModifiedEvents()) {
           this.setDragAnchorPoint()
           this.onMoveEvents(this.getModifiedEvents())
@@ -723,7 +722,6 @@ class GanttChart {
     const XScale = this.scale.get()
 
     const modifiedEvents = this.getRescheduledEvents(target, xCoord)
-
     this.scheduleRect
       .filter(({ id }) => this.isEventSelected(id))
       .attr('x', event => XScale(modifiedEvents[event.id].startTime))
@@ -773,7 +771,8 @@ class GanttChart {
     const newTime = this.getNewTime(target, xCoord)
     if (
       differenceInMinutes(event.endTime, newTime(event.startTime)) <
-      this.minEventDuration
+        this.minEventDuration &&
+      !!target.time
     ) {
       return subMinutes(event.endTime, this.minEventDuration)
     }
@@ -784,7 +783,8 @@ class GanttChart {
     const newTime = this.getNewTime(target, xCoord)
     if (
       differenceInMinutes(newTime(event.endTime), event.startTime) <
-      this.minEventDuration
+        this.minEventDuration &&
+      !!target.time
     ) {
       return addMinutes(event.startTime, this.minEventDuration)
     }
