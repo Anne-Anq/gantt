@@ -1,8 +1,10 @@
 import * as d3 from 'd3'
 import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
 import { ScaleManager } from './ScaleManager'
+import { EventSelection } from './EventSelection'
 import tinycolor from 'tinycolor2'
 import { differenceInMinutes, subMinutes, addMinutes } from 'date-fns'
+
 class GanttChart {
   constructor({
     containerId,
@@ -23,6 +25,7 @@ class GanttChart {
     this.isZooming = false
     this.dragAnchorPoint = undefined
     this.minEventDuration = minEventDuration
+    this.eventSelection = new EventSelection()
   }
 
   setValues = values => (this.values = values)
@@ -36,10 +39,6 @@ class GanttChart {
   setIsInitiated = isInitiated => (this.isInitiated = isInitiated)
 
   getIsInitiated = () => this.isInitiated
-
-  setSelectedEvents = selectedEvents => (this.selectedEvents = selectedEvents)
-
-  getSelectedEvents = () => this.selectedEvents
 
   setIsCtrlKeyDown = isCtrlKeyDown => (this.isCtrlKeyDown = isCtrlKeyDown)
 
@@ -95,7 +94,7 @@ class GanttChart {
     const eventActionMap = {
       mousedownSchedule: () => {
         this.scheduleSectionBackground.style('cursor', 'grabbing')
-        this.unselectAllEvents()
+        this.eventSelection.reset()
       },
       zoomEnd: () => {
         this.setIsZooming(false)
@@ -121,27 +120,12 @@ class GanttChart {
       },
       clickRect: event => {
         d3.event.stopPropagation()
-        if (!this.getIsCtrlKeyDown()) {
-          if (
-            this.isEventSelected(event.id) &&
-            this.getSelectedEvents().length === 1
-          ) {
-            this.unselectEvent(event)
-          } else {
-            this.selectOnlyEvent(event)
-          }
-        } else {
-          if (this.isEventSelected(event.id)) {
-            this.unselectEvent(event)
-          } else {
-            this.selectAdditionalEvent(event)
-          }
-        }
+        this.eventSelection.handleClick(event, this.getIsCtrlKeyDown())
       },
       dragRect: () => {
         if (
           d3.event.type === 'drag' &&
-          this.isEventSelected(d3.event.subject.id)
+          this.eventSelection.contains(d3.event.subject.id)
         ) {
           this.removeScheduleTooltip()
           if (!this.getDragAnchorPoint()) {
@@ -159,7 +143,7 @@ class GanttChart {
       },
       keydown: () => {
         if (d3.event.key === 'Escape') {
-          this.unselectAllEvents()
+          this.eventSelection.reset()
         }
         if (d3.event.key === 'Control') {
           this.setIsCtrlKeyDown(true)
@@ -172,31 +156,6 @@ class GanttChart {
       }
     }
     return eventActionMap[event]
-  }
-
-  isEventSelected = eventId =>
-    !!this.getSelectedEvents().find(({ id }) => id === eventId)
-
-  selectAdditionalEvent = event => {
-    this.setSelectedEvents([...this.getSelectedEvents(), event])
-    this.formatSelectedEvents()
-  }
-
-  selectOnlyEvent = event => {
-    this.setSelectedEvents([event])
-    this.formatSelectedEvents()
-  }
-
-  unselectEvent = event => {
-    this.setSelectedEvents(
-      this.getSelectedEvents().filter(({ id }) => id !== event.id)
-    )
-    this.formatSelectedEvents()
-  }
-
-  unselectAllEvents = () => {
-    this.setSelectedEvents([])
-    this.formatSelectedEvents()
   }
 
   DEFAULT_EVENT_TITLE_WIDTH = 100
@@ -412,6 +371,12 @@ class GanttChart {
       .attr('class', 'eventTitleText')
       .attr('y', this.LINE_HEIGHT / 2)
       .attr('x', this.PADDING_LEFT_TEXT)
+
+    this.eventSelection.addFormat({
+      node: this.eventTitleText,
+      selected: node => node.style('font-weight', 'bold'),
+      unselected: node => node.style('font-weight', 'normal')
+    })
   }
 
   addHandleGradientDef = () => {
@@ -485,6 +450,25 @@ class GanttChart {
       .attr('rx', 5)
       .style('cursor', 'pointer')
 
+    this.eventSelection.addFormat({
+      node: this.scheduleRect,
+      selected: node =>
+        node
+          .attr('fill', event =>
+            tinycolor(event.style.bg)
+              .lighten(20)
+              .toString()
+          )
+          .attr('stroke', event => event.style.bg)
+          .attr('stroke-width', 2)
+          .style('cursor', 'move'),
+      unselected: node =>
+        node
+          .attr('stroke-width', 0)
+          .attr('fill', event => event.style.bg)
+          .style('cursor', 'pointer')
+    })
+
     this.rectHandle = scheduleGroup
       .selectAll('circle')
       .data(event => this.TIMES.map(time => ({ time, ...event })))
@@ -502,6 +486,12 @@ class GanttChart {
       .style('cursor', 'ew-resize')
       .attr('visibility', 'hidden')
       .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
+
+    this.eventSelection.addFormat({
+      node: this.rectHandle,
+      selected: node => node.attr('visibility', 'visible'),
+      unselected: node => node.attr('visibility', 'hidden')
+    })
 
     this.getScheduleRectsByEvent = event =>
       d3.selectAll(`.scheduleRect_${event.id}`)
@@ -534,41 +524,6 @@ class GanttChart {
       this.getTooltipDataDivs().remove()
     }
     this.scheduleRectTooltip.style('display', 'none')
-  }
-
-  formatSelectedEvents = () => {
-    this.scheduleRect
-      .filter(({ id }) => this.isEventSelected(id))
-      .attr('fill', event =>
-        tinycolor(event.style.bg)
-          .lighten(20)
-          .toString()
-      )
-      .attr('stroke', event => event.style.bg)
-      .attr('stroke-width', 2)
-      .style('cursor', 'move')
-
-    this.rectHandle
-      .filter(({ id }) => this.isEventSelected(id))
-      .attr('visibility', 'visible')
-
-    this.eventTitleText
-      .filter(({ id }) => this.isEventSelected(id))
-      .style('font-weight', 'bold')
-
-    this.scheduleRect
-      .filter(({ id }) => !this.isEventSelected(id))
-      .attr('stroke-width', 0)
-      .attr('fill', event => event.style.bg)
-      .style('cursor', 'pointer')
-
-    this.eventTitleText
-      .filter(({ id }) => !this.isEventSelected(id))
-      .style('font-weight', 'normal')
-
-    this.rectHandle
-      .filter(({ id }) => !this.isEventSelected(id))
-      .attr('visibility', 'hidden')
   }
 
   addDataToScheduleTooltip = event => {
@@ -723,7 +678,7 @@ class GanttChart {
 
     const modifiedEvents = this.getRescheduledEvents(target, xCoord)
     this.scheduleRect
-      .filter(({ id }) => this.isEventSelected(id))
+      .filter(({ id }) => this.eventSelection.contains(id))
       .attr('x', event => XScale(modifiedEvents[event.id].startTime))
       .attr(
         'width',
@@ -735,7 +690,7 @@ class GanttChart {
     this.rectHandle
       .filter(
         handleData =>
-          this.isEventSelected(handleData.id) &&
+          this.eventSelection.contains(handleData.id) &&
           (!target.time || handleData.time === target.time)
       )
       .attr('cx', handleData =>
@@ -748,7 +703,7 @@ class GanttChart {
   getRescheduledEvents = (target, xCoord) => {
     const getStartTime = this.getNewStartTime(target, xCoord)
     const getEndTime = this.getNewEndTime(target, xCoord)
-    return this.getSelectedEvents().reduce((result, event) => {
+    return this.eventSelection.get().reduce((result, event) => {
       result[event.id] = {
         startTime:
           target.time === 'endTime' ? event.startTime : getStartTime(event),
