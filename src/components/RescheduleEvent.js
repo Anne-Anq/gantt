@@ -10,62 +10,58 @@ class RescheduleEvent {
   }) {
     this.getScheduleRect = getScheduleRect
     this.getRectHandle = getRectHandle
+    this.scale = scale
     this.eventSelection = eventSelection
     this.minEventDuration = minEventDuration
     this.dragAnchorPoint = undefined
     this.modifiedEvents = undefined
-    this.scale = scale
     this.target = undefined
   }
 
-  getModifiedEvents = () => this.modifiedEvents
+  _setModifiedEvents = modifiedEvents => (this.modifiedEvents = modifiedEvents)
+  _getModifiedEvents = () => this.modifiedEvents
 
-  setModifiedEvents = modifiedEvents => (this.modifiedEvents = modifiedEvents)
-
-  setDragAnchorPoint = dragAnchorPoint =>
+  _setDragAnchorPoint = dragAnchorPoint =>
     (this.dragAnchorPoint = dragAnchorPoint)
+  _getDragAnchorPoint = () => this.dragAnchorPoint
 
-  getDragAnchorPoint = () => this.dragAnchorPoint
+  _setTarget = target => (this.target = target)
+  _getTarget = () => this.target
 
-  isActive = () => !!this.getModifiedEvents()
-
-  dragStart = (target, dragAnchorPoint) => {
-    this.target = target
-    this.setDragAnchorPoint(dragAnchorPoint)
-    this.selectedRects = this.getScheduleRect().filter(({ id }) =>
-      this.eventSelection.contains(id)
-    )
-
-    this.selectedHandles = this.getRectHandle().filter(
-      handleData =>
-        this.eventSelection.contains(handleData.id) &&
-        (!target.time || handleData.time === target.time)
-    )
-    this.selectedEvents = this.eventSelection.get()
-  }
+  isActive = () => !!this._getModifiedEvents()
 
   drag = (d3Event, draggedEventX) => {
-    if (d3Event.type === 'start') {
-      this.dragStart(d3Event.subject, d3Event.x - draggedEventX)
-    } else if (d3Event.type === 'drag') {
-      this.moveEvent(d3Event.x)
-    } else if (d3Event.type === 'end') {
-      return this.dragEnd()
+    switch (d3Event.type) {
+      case 'start':
+        this._setTarget(d3Event.subject)
+        this._setDragAnchorPoint(d3Event.x - draggedEventX)
+        break
+      case 'drag':
+        this._reschedule(d3Event.x)
+        break
+      case 'end':
+        if (this._getModifiedEvents()) {
+          this._setDragAnchorPoint()
+          this._setModifiedEvents()
+          return this._getModifiedEvents()
+        }
+        break
+      default: {
+        break
+      }
     }
   }
 
-  dragEnd = () => {
-    if (this.getModifiedEvents()) {
-      this.setDragAnchorPoint()
-      this.setModifiedEvents()
-      console.log(this.getModifiedEvents())
-      return this.getModifiedEvents()
-    }
+  _reschedule = xCoord => {
+    const modifiedEvents = this._getRescheduledEvents(xCoord)
+    this._moveEvents(modifiedEvents)
+    this._moveHandles(modifiedEvents)
+    this._setModifiedEvents({ ...this._getModifiedEvents(), ...modifiedEvents })
   }
 
-  moveEvent = xCoord => {
-    const modifiedEvents = this.getRescheduledEvents(xCoord)
-    this.selectedRects
+  _moveEvents = modifiedEvents =>
+    this.getScheduleRect()
+      .filter(({ id }) => this.eventSelection.contains(id))
       .attr('x', event => this.scale.get()(modifiedEvents[event.id].startTime))
       .attr(
         'width',
@@ -74,60 +70,71 @@ class RescheduleEvent {
           this.scale.get()(modifiedEvents[event.id].startTime)
       )
 
-    this.selectedHandles.attr('cx', handleData =>
-      this.scale.get()(modifiedEvents[handleData.id][handleData.time])
-    )
+  _moveHandles = modifiedEvents =>
+    this.getRectHandle()
+      .filter(
+        handleData =>
+          this.eventSelection.contains(handleData.id) &&
+          (!this._getTarget().time ||
+            handleData.time === this._getTarget().time)
+      )
+      .attr('cx', handleData =>
+        this.scale.get()(modifiedEvents[handleData.id][handleData.time])
+      )
 
-    this.setModifiedEvents({ ...this.getModifiedEvents(), ...modifiedEvents })
+  _getRescheduledEvents = xCoord => {
+    switch (this._getTarget().time) {
+      case 'startTime':
+        return this._changeStart(xCoord)
+      case 'endTime':
+        return this._changeEnd(xCoord)
+      default:
+        return this._schiftEvent(xCoord)
+    }
   }
 
-  getRescheduledEvents = xCoord => {
-    const getStartTime = this.getNewStartTime(xCoord)
-    const getEndTime = this.getNewEndTime(xCoord)
-    return this.eventSelection.get().reduce((result, event) => {
+  _schiftEvent = xCoord =>
+    this.eventSelection.get().reduce((result, event) => {
       result[event.id] = {
-        startTime:
-          this.target.time === 'endTime'
-            ? event.startTime
-            : getStartTime(event),
-        endTime:
-          this.target.time === 'startTime' ? event.endTime : getEndTime(event)
+        startTime: this._getNewTime(xCoord, event.startTime),
+        endTime: this._getNewTime(xCoord, event.endTime)
       }
       return result
     }, {})
-  }
 
-  getNewTime = xCoord => currentTime => {
+  _changeStart = xCoord =>
+    this.eventSelection.get().reduce((result, event) => {
+      const newStart = this._getNewTime(xCoord, event.startTime)
+      result[event.id] = {
+        startTime:
+          differenceInMinutes(event.endTime, newStart) < this.minEventDuration
+            ? subMinutes(event.endTime, this.minEventDuration)
+            : newStart,
+        endTime: event.endTime
+      }
+      return result
+    }, {})
+
+  _changeEnd = xCoord =>
+    this.eventSelection.get().reduce((result, event) => {
+      const newEnd = this._getNewTime(xCoord, event.endTime)
+      result[event.id] = {
+        startTime: event.startTime,
+        endTime:
+          differenceInMinutes(newEnd, event.startTime) < this.minEventDuration
+            ? addMinutes(event.startTime, this.minEventDuration)
+            : newEnd
+      }
+      return result
+    }, {})
+
+  _getNewTime = (xCoord, currentTime) => {
     const newX =
       xCoord +
       this.scale.get()(currentTime) -
-      this.scale.get()(this.target.startTime) -
-      this.getDragAnchorPoint()
+      this.scale.get()(this._getTarget().startTime) -
+      this._getDragAnchorPoint()
     return this.scale.get().invert(newX)
-  }
-
-  getNewStartTime = xCoord => event => {
-    const newTime = this.getNewTime(xCoord)
-    if (
-      differenceInMinutes(event.endTime, newTime(event.startTime)) <
-        this.minEventDuration &&
-      !!this.target.time
-    ) {
-      return subMinutes(event.endTime, this.minEventDuration)
-    }
-    return newTime(event.startTime)
-  }
-
-  getNewEndTime = xCoord => event => {
-    const newTime = this.getNewTime(xCoord)
-    if (
-      differenceInMinutes(newTime(event.endTime), event.startTime) <
-        this.minEventDuration &&
-      !!this.target.time
-    ) {
-      return addMinutes(event.startTime, this.minEventDuration)
-    }
-    return newTime(event.endTime)
   }
 }
 
