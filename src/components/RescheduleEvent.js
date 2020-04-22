@@ -41,7 +41,6 @@ class RescheduleEvent {
         break
       case 'end':
         if (this._getModifiedEvents()) {
-          this._setDragAnchorPoint()
           this._setModifiedEvents()
           return this._getModifiedEvents()
         }
