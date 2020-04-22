@@ -2,17 +2,18 @@ import React, { useState, useRef, useEffect } from 'react'
 import { GanttChart } from './GanttChart'
 import './style.css'
 
-export const SearchValuesList = ({ values, updateEvents }) => {
+export const GanttComponent = ({
+  values,
+  onMoveEvents,
+  onBoundariesChange
+}) => {
   const [mounted, setMounted] = useState(false)
-  const handleMoveEvents = newEventsData => updateEvents(newEventsData)
-  // const handleBoundariesChange = boundaries =>
-  //   console.log('new boundaries', boundaries)
 
   const ganttChart = useRef(
     new GanttChart({
       containerId: 'container',
-      onMoveEvents: handleMoveEvents,
-      // onBoundariesChange: handleBoundariesChange
+      onMoveEvents,
+      onBoundariesChange,
       minEventDuration: 15
     })
   )
