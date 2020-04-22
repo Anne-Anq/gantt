@@ -3,7 +3,7 @@ import { getTicksSpacing, fullDateTimeFormat, getTicksFormat } from './utils'
 import { ScaleManager } from './ScaleManager'
 import { EventSelection } from './EventSelection'
 import tinycolor from 'tinycolor2'
-import { differenceInMinutes, subMinutes, addMinutes } from 'date-fns'
+import { RescheduleEvent } from './RescheduleEvent'
 
 class GanttChart {
   constructor({
@@ -17,15 +17,18 @@ class GanttChart {
     this.titleWidth = this.DEFAULT_EVENT_TITLE_WIDTH
     this.isInitiated = false
     this.scale = new ScaleManager()
-    this.selectedEvents = []
     this.isCtrlKeyDown = false
     this.onMoveEvents = onMoveEvents
-    this.modifiedEvents = undefined
     this.onBoundariesChange = onBoundariesChange
     this.isZooming = false
-    this.dragAnchorPoint = undefined
-    this.minEventDuration = minEventDuration
     this.eventSelection = new EventSelection()
+    this.rescheduleEvent = new RescheduleEvent({
+      getScheduleRect: () => this.scheduleRect,
+      getRectHandle: () => this.rectHandle,
+      scale: this.scale,
+      eventSelection: this.eventSelection,
+      minEventDuration: minEventDuration
+    })
   }
 
   setValues = values => (this.values = values)
@@ -44,18 +47,9 @@ class GanttChart {
 
   getIsCtrlKeyDown = () => this.isCtrlKeyDown
 
-  setModifiedEvents = modifiedEvents => (this.modifiedEvents = modifiedEvents)
-
-  getModifiedEvents = () => this.modifiedEvents
-
   setIsZooming = isZooming => (this.isZooming = isZooming)
 
   getIsZooming = () => this.isZooming
-
-  setDragAnchorPoint = dragAnchorPoint =>
-    (this.dragAnchorPoint = dragAnchorPoint)
-
-  getDragAnchorPoint = () => this.dragAnchorPoint
 
   getTotalEventsSvgDivHeight = eventNumber => eventNumber * this.LINE_HEIGHT
 
@@ -123,22 +117,15 @@ class GanttChart {
         this.eventSelection.handleClick(event, this.getIsCtrlKeyDown())
       },
       dragRect: () => {
-        if (
-          d3.event.type === 'drag' &&
-          this.eventSelection.contains(d3.event.subject.id)
-        ) {
+        if (this.eventSelection.contains(d3.event.subject.id)) {
           this.removeScheduleTooltip()
-          if (!this.getDragAnchorPoint()) {
-            this.setDragAnchorPoint(
-              d3.event.x -
-                this.getScheduleRectsByEvent(d3.event.subject).attr('x')
-            )
+          const modifiedEvents = this.rescheduleEvent.drag(
+            d3.event,
+            this.getScheduleRectsByEvent(d3.event.subject).attr('x')
+          )
+          if (modifiedEvents) {
+            this.onMoveEvents(modifiedEvents)
           }
-          this.moveEvents(d3.event.subject, d3.event.x)
-        } else if (d3.event.type === 'end' && this.getModifiedEvents()) {
-          this.setDragAnchorPoint()
-          this.onMoveEvents(this.getModifiedEvents())
-          this.setModifiedEvents()
         }
       },
       keydown: () => {
@@ -485,7 +472,7 @@ class GanttChart {
       .attr('r', 4)
       .style('cursor', 'ew-resize')
       .attr('visibility', 'hidden')
-      .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
+      .call(d3.drag().on('start drag end', this.handleEvent('dragRect')))
 
     this.eventSelection.addFormat({
       node: this.rectHandle,
@@ -497,7 +484,7 @@ class GanttChart {
       d3.selectAll(`.scheduleRect_${event.id}`)
 
     const onMouseOver = (event, thatScheduleRectNode) => {
-      if (!this.getIsZooming() && !this.getModifiedEvents()) {
+      if (!this.getIsZooming() && !this.rescheduleEvent.isActive()) {
         this.addDataToScheduleTooltip(event)
         this.makeScheduleTooltipVisible(thatScheduleRectNode)
       }
@@ -516,7 +503,7 @@ class GanttChart {
         onMouseMove(this)
       })
       .on('click', this.handleEvent('clickRect'))
-      .call(d3.drag().on('drag end', this.handleEvent('dragRect')))
+      .call(d3.drag().on('start drag end', this.handleEvent('dragRect')))
   }
 
   removeScheduleTooltip = () => {
@@ -671,79 +658,6 @@ class GanttChart {
     this.rectHandle.attr('cx', handleData =>
       XScale(handleData[handleData.time])
     )
-  }
-
-  moveEvents = (target, xCoord) => {
-    const XScale = this.scale.get()
-
-    const modifiedEvents = this.getRescheduledEvents(target, xCoord)
-    this.scheduleRect
-      .filter(({ id }) => this.eventSelection.contains(id))
-      .attr('x', event => XScale(modifiedEvents[event.id].startTime))
-      .attr(
-        'width',
-        event =>
-          XScale(modifiedEvents[event.id].endTime) -
-          XScale(modifiedEvents[event.id].startTime)
-      )
-
-    this.rectHandle
-      .filter(
-        handleData =>
-          this.eventSelection.contains(handleData.id) &&
-          (!target.time || handleData.time === target.time)
-      )
-      .attr('cx', handleData =>
-        XScale(modifiedEvents[handleData.id][handleData.time])
-      )
-
-    this.setModifiedEvents({ ...this.getModifiedEvents(), ...modifiedEvents })
-  }
-
-  getRescheduledEvents = (target, xCoord) => {
-    const getStartTime = this.getNewStartTime(target, xCoord)
-    const getEndTime = this.getNewEndTime(target, xCoord)
-    return this.eventSelection.get().reduce((result, event) => {
-      result[event.id] = {
-        startTime:
-          target.time === 'endTime' ? event.startTime : getStartTime(event),
-        endTime: target.time === 'startTime' ? event.endTime : getEndTime(event)
-      }
-      return result
-    }, {})
-  }
-
-  getNewTime = (target, xCoord) => currentTime => {
-    const newX =
-      xCoord +
-      this.scale.get()(currentTime) -
-      this.scale.get()(target.startTime) -
-      this.getDragAnchorPoint()
-    return this.scale.get().invert(newX)
-  }
-
-  getNewStartTime = (target, xCoord) => event => {
-    const newTime = this.getNewTime(target, xCoord)
-    if (
-      differenceInMinutes(event.endTime, newTime(event.startTime)) <
-        this.minEventDuration &&
-      !!target.time
-    ) {
-      return subMinutes(event.endTime, this.minEventDuration)
-    }
-    return newTime(event.startTime)
-  }
-
-  getNewEndTime = (target, xCoord) => event => {
-    const newTime = this.getNewTime(target, xCoord)
-    if (
-      differenceInMinutes(newTime(event.endTime), event.startTime) <
-        this.minEventDuration &&
-      !!target.time
-    ) {
-      return addMinutes(event.startTime, this.minEventDuration)
-    }
-    return newTime(event.endTime)
   }
 
   moveHandle = () => {
