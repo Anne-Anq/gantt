@@ -47,6 +47,7 @@ export const SearchBar = ({ data, children }) => {
         <OutlinedInput
           id="search-bar"
           type="text"
+          placeholder="Start searching for entities to see their schedule..."
           value={ongoingValue}
           onKeyDown={event => {
             if (event.key === 'Enter') {
